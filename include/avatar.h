@@ -27,10 +27,6 @@
 #include "tocabi_msgs/WalkingCommand.h"
 #include <std_msgs/Float32.h>
 
-// Kwan
-#include "mujoco_ros_msgs/SimStatus.h" // ros message
-#include "mujoco_ros_msgs/SensorState.h"
-
 const int FILE_CNT = 14;
 
 const std::string FILE_NAMES[FILE_CNT] =
@@ -125,8 +121,6 @@ public:
     std::atomic<bool> atb_cpmpc_x_update_{false};
     std::atomic<bool> atb_cpmpc_y_update_{false};
     std::atomic<bool> atb_new_cpmpc_rcv_update_{false};
-
-    std::atomic<bool> atb_vhip_update_{false};
 
     RigidBodyDynamics::Model model_d_;  //updated by desired q
     RigidBodyDynamics::Model model_c_;  //updated by current q
@@ -1346,7 +1340,7 @@ public:
     Eigen::VectorXd alpha_mpc_;
     Eigen::VectorXd F_diff_mpc_x_;
     Eigen::VectorXd F_diff_mpc_y_;
-    double alpha_lpf_ = 0;
+    double alpha_lpf_ = 0.0;
     double temp_pos_y_ = 0;
     double F0_F1_mpc_x_ = 0, F1_F2_mpc_x_ = 0, F2_F3_mpc_x_ = 0, F0_F1_mpc_y_ = 0, F1_F2_mpc_y_ = 0, F2_F3_mpc_y_ = 0;
     Eigen::Vector2d foot_diff_current2next_;
@@ -1763,14 +1757,161 @@ public:
     Eigen::VectorQd q_mj;
     Eigen::VectorQd q_mj_prev;
 
-    //////////////////////////////// Kwan-woo  
-    void VHIP();
-    void VHIP_Stabilization();
-    CQuadraticProgram VHIP_QP;
+    //////////////////////////////// Econom2 function
+    void writeDataTxt();
+    void getComTrajectory_Z_e();
+    void comRefGenerator_Z_e();
+    void comGenerator_MPC_Z_e(double MPC_z_freq, double T_z_, double preview_window_z_, int MPC_synchro_hz_);
+    void comHeightInt(Eigen::VectorXd& com_int);
+    void comGenerator(const unsigned int norm_size, const unsigned planning_step_num);
+    void onestepComz(unsigned int current_step_number, Eigen::VectorXd& temp_cz);
     
-    void SaveIMU(const mujoco_ros_msgs::SimStatusConstPtr &msg);
-    ros::Subscriber mujoco_sim_status_sub_;
-    bool is_first_callback = true;
+    //////////////////////////////// Econom2 variables
+    Eigen::Vector2d zmp_desired_;
+    double height_diff = 0.0;
+    Eigen::MatrixXd ref_com_z_e_;
+    Eigen::MatrixXd ref_com_z_mpc_;
+    Eigen::MatrixXd ref_com_z_thread_;
+    
+    ///z mpc
+    Eigen::Vector3d MPC_z_;
+    Eigen::Vector3d MPC_z_p_;
+    Eigen::Vector3d MPC_z_r_;
+    Eigen::Vector3d MPC_z_r_sc_;
+    Eigen::Vector3d MPC_z_r_p_;
+    Eigen::Vector3d MPC_z_r_p_sc_;
+    Eigen::Vector3d MPC_z_thread_;
+    Eigen::Vector3d MPC_z_thread2_;
+    Eigen::Vector3d MPC_z_p_thread_;
+    Eigen::Vector3d MPC_z_p_thread2_;
+    Eigen::Vector3d MPC_z_r_thread_;
+    Eigen::Vector3d MPC_z_r_p_thread_;
+    Eigen::Vector3d MPC_z_mpc_;
+    Eigen::Vector3d MPC_z_p_mpc_;
+    Eigen::Vector3d MPC_z_r_mpc_;
+    Eigen::Vector3d MPC_z_r_p_mpc_;
+    Eigen::MatrixXd Az_mpc_;
+    Eigen::MatrixXd Bz_mpc_;
+    Eigen::MatrixXd Czp_mpc_;
+    Eigen::MatrixXd Czv_mpc_;
+    Eigen::MatrixXd Cza_mpc_;
+    Eigen::MatrixXd Czmp_mpc_;
+    Eigen::MatrixXd Qzp_mpc_;
+    Eigen::MatrixXd Qzv_mpc_;
+    Eigen::MatrixXd Qza_mpc_;
+    Eigen::MatrixXd Rz_mpc_;
+    Eigen::MatrixXd Pzps_mpc_;
+    Eigen::MatrixXd Pzvs_mpc_;
+    Eigen::MatrixXd Pzas_mpc_;
+    Eigen::MatrixXd Pzmps_mpc_e_;
+    Eigen::MatrixXd Pzpu_mpc_;
+    Eigen::MatrixXd Pzvu_mpc_;
+    Eigen::MatrixXd Pzau_mpc_;
+    Eigen::MatrixXd Pzmpu_mpc_e_;
+    Eigen::VectorXd z_com_pos_recur_;
+    Eigen::VectorXd z_com_vel_recur_;
+    Eigen::VectorXd z_com_acc_recur_;
+    Eigen::MatrixXd Qcalcz_mpc_;
+    Eigen::MatrixXd gcalcz_mpc_;
+    CQuadraticProgram QP_mpc_z_;
+    Eigen::VectorXd MPC_input_z_;
+    Eigen::VectorXd U_z_mpc_;
+    double com_start_tick_e_;
+    double com_start_tick_e_mpc_;
+    double com_start_tick_e_thread_;
+    int Z_e_interpol_cnt_ = 0;
+
+    double MPC_w_;
+    double MPC_w_p_;
+    double MPC_w_r_;
+    double MPC_w_r_sc_;
+    double MPC_w_r_p_;
+    double MPC_w_r_p_sc_;
+    double MPC_w_thread_;
+    double MPC_w_thread2_;
+    double MPC_w_p_thread_;
+    double MPC_w_p_thread2_;
+    double MPC_w_r_thread_;
+    double MPC_w_r_p_thread_;
+    double MPC_w_mpc_;
+    double MPC_w_p_mpc_;
+    double MPC_w_r_mpc_;
+    double MPC_w_r_p_mpc_;
+
+    double MPC_w_dot_;
+    double MPC_w_dot_p_;
+    double MPC_w_dot_r_;
+    double MPC_w_dot_r_sc_;
+    double MPC_w_dot_r_p_;
+    double MPC_w_dot_r_p_sc_;
+    double MPC_w_dot_thread_;
+    double MPC_w_dot_thread2_;
+    double MPC_w_dot_p_thread_;
+    double MPC_w_dot_p_thread2_;
+    double MPC_w_dot_r_thread_;
+    double MPC_w_dot_r_p_thread_;
+    double MPC_w_dot_mpc_;
+    double MPC_w_dot_p_mpc_;
+    double MPC_w_dot_r_mpc_;
+    double MPC_w_dot_r_p_mpc_;
+
+    double MPC_lambda_;
+    double MPC_lambda_p_;
+    double MPC_lambda_r_;
+    double MPC_lambda_r_sc_;
+    double MPC_lambda_r_p_;
+    double MPC_lambda_r_p_sc_;
+    double MPC_lambda_thread_;
+    double MPC_lambda_thread2_;
+    double MPC_lambda_p_thread_;
+    double MPC_lambda_p_thread2_;
+    double MPC_lambda_r_thread_;
+    double MPC_lambda_r_p_thread_;
+    double MPC_lambda_mpc_;
+    double MPC_lambda_p_mpc_;
+    double MPC_lambda_r_mpc_;
+    double MPC_lambda_r_p_mpc_;
+
+    double MPC_wf_;
+
+    //3D DCM
+
+    double debug_int = 0;
+
+    // Kwanwoo Lee
+    void SaveState();
+    void StateMachine();
+    void ZmpController();
+    void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L);
+    void FootTorqueController(Eigen::Vector3d T_R, Eigen::Vector3d T_L);
+    void FootForceController(Eigen::Vector3d F_R, Eigen::Vector3d F_L);
+    void getFootTrajectory_Kajita();
+    void getPelvTrajectory_kajita();
+    double LPF(double x, double x_LPF);
+
+    bool is_left_foot_support = false;
+    bool is_right_foot_support = false;
+
+    bool is_dsp1 = true;
+    bool is_ssp = false;
+    bool is_dsp2 = false;
+
+    Eigen::Vector3d right_ankle_force; 
+    Eigen::Vector3d left_ankle_force; 
+    Eigen::Vector3d right_ankle_torque; 
+    Eigen::Vector3d left_ankle_torque;
+    double z_ctrl = 0.0;
+    double z_ctrl_lpf = 0.0;
+    
+    double R_ankle_roll_input = 0.0;
+    double R_ankle_pitch_input = 0.0;
+
+    double L_ankle_roll_input = 0.0;
+    double L_ankle_pitch_input = 0.0;
+
+    double pelvis_roll_input = 0.0;
+    double pelvis_pitch_input = 0.0;
+    double pelvis_yaw_input = 0.0;
 
 private:    
     //////////////////////////////// Myeong-Ju
@@ -1780,57 +1921,6 @@ private:
     unsigned int walking_tick_e_thread_ = 0;
     unsigned int initial_tick_mj = 0;
     unsigned int initial_flag = 0;
-    const double hz_ = 2000.0;  
+    const double hz_ = 2000.0; 
 
-    //////////////////////////////// Kwan-woo
-
-    bool is_vhip_ctrl_init = true;
-    bool is_qp_init = true;
-
-    Eigen::MatrixXd W_VHIP_;
-    Eigen::VectorXd X_VHIP_;
-
-    Eigen::MatrixXd A_VHIP_;
-    Eigen::VectorXd b_VHIP_;
-    Eigen::MatrixXd G_VHIP_;
-    Eigen::VectorXd hmax_VHIP_;
-    Eigen::VectorXd hmin_VHIP_;
-
-    Eigen::MatrixXd VHIPConstraintMatrix;
-    Eigen::VectorXd VHIPBoundaryMinVector;
-    Eigen::VectorXd VHIPBoundaryMaxVector;
-
-
-    Eigen::Vector3d dcm_desired_;
-    Eigen::Vector3d vrp_desired_;
-    Eigen::Vector3d zmp_desired_;
-    Eigen::Vector3d com_desired_dot_;
-    double w_desired_;
-    double lambda_desired_;
-    
-    double lambda_;
-    double lambda_LPF_;
-
-    Eigen::Vector3d del_com_;
-    Eigen::Vector3d del_com_dot_;
-    double del_lambda_;
-    double del_lambda_r_;
-    double del_lambda_thread_;
-    double del_lambda_thread2_;
-
-    Eigen::Vector2d del_zmp_;
-    Eigen::Vector2d del_zmp_r_;
-    Eigen::Vector2d del_zmp_thread_;
-    Eigen::Vector2d del_zmp_thread2_;
-
-    Eigen::VectorQd torque_VHIP_;
-
-    Eigen::VectorXd comp_; 
-    Eigen::VectorXd comp_d_; 
-    Eigen::VectorXd comp_dd_; 
-
-    Eigen::VectorXd com_; 
-    Eigen::VectorXd com_d_; 
-    Eigen::VectorXd com_dd_;
-    Eigen::Vector3d IMU_acc;
 };

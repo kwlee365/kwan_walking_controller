@@ -1,32 +1,22 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 2.8.3)
 project(tocabi_avatar)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++17 -O3)
 
-## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  std_msgs
-  tocabi_lib
-  tocabi_msgs
-  eigen_conversions
-  mujoco_ros
+find_package(catkin REQUIRED
+roscpp
+tocabi_lib
+tocabi_msgs
+eigen_conversions
 )
 
-################################################
-## Declare ROS dynamic reconfigure parameters ##
-################################################
-
-###################################
-## catkin specific configuration ##
-###################################
+# find_package(lexls REQUIRED)
 
 catkin_package(
- INCLUDE_DIRS include
- LIBRARIES  ${PROJECT_NAME}
- CATKIN_DEPENDS roscpp std_msgs
-#  DEPENDS system_lib
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+  CATKIN_DEPENDS tocabi_lib tocabi_msgs
+# DEPENDS system_lib
 )
 
 ###########
@@ -34,24 +24,20 @@ catkin_package(
 ###########
 
 include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
+    include
+    ${catkin_INCLUDE_DIRS}
 )
 
-## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/avatar.cpp
 )
-
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
-#############
-## Install ##
-#############
+# target_link_libraries(${PROJECT_NAME} PUBLIC lexls::lexls)
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -59,7 +45,6 @@ install(TARGETS ${PROJECT_NAME}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 
-## Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
