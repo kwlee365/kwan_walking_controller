@@ -85,7 +85,6 @@ public:
     CQuadraticProgram QP_qdot_wholebody_;
     std::vector<CQuadraticProgram> QP_qdot_hqpik_;        
     std::vector<CQuadraticProgram> QP_qdot_hqpik2_;
-    std::vector<CQuadraticProgram> QP_cam_hqp_;
     CQuadraticProgram QP_mpc_x_;
     CQuadraticProgram QP_mpc_y_;
     CQuadraticProgram QP_motion_retargeting_lhand_;
@@ -209,8 +208,6 @@ public:
     Eigen::MatrixXd discreteRiccatiEquationPrev(Eigen::MatrixXd a, Eigen::MatrixXd b, Eigen::MatrixXd r, Eigen::MatrixXd q);
     void getCentroidalMomentumMatrix(MatrixXd mass_matrix, MatrixXd &CMM);
     void updateCMM_DG();
-    void CentroidalMomentCalculator();
-    void CentroidalMomentCalculator_new();
 
     void getZmpTrajectory_dg();
     void savePreData();
@@ -1173,8 +1170,6 @@ public:
     Eigen::Vector3d x_hat_p_thread2_;
     Eigen::Vector3d y_hat_p_thread2_;
 
-    Eigen::VectorXd MPC_input_x_;
-    Eigen::VectorXd MPC_input_y_;
     Eigen::Matrix3d A_mpc_;
     Eigen::Vector3d B_mpc_;
     Eigen::Vector3d C_mpc_transpose_;
@@ -1367,6 +1362,8 @@ public:
     ////////////////////////////////////////////////////////////
     
     /////////////CAM-HQP//////////////////////////
+    std::vector<CQuadraticProgram> QP_cam_hqp_;
+
     const int hierarchy_num_camhqp_ = 2;
     const int variable_size_camhqp_ = 10; // original number -> 6 (DG) // IROS -> 8 (MJ)
     const int constraint_size1_camhqp_ = 10; //[lb <= x <=	ub] form constraints // original number -> 6 (DG)  // IROS -> 8 (MJ)
@@ -1374,18 +1371,18 @@ public:
     const int constraint_size2_camhqp_[2] = {0, 2};	//[lb <=	Ax 	<=	ub] or [Ax = b] 
     //const int control_size_camhqp_[2] = {3, 8}; //1: CAM control, 2: init pose // original number -> 6 (DG)
     const int control_size_camhqp_[2] = {2, 10}; //1: CAM control, 2: init pose // original number -> 6 (DG) // IROS -> 8 (MJ)  
-
     double w1_camhqp_[2];
-    double w2_camhqp_[2]; 
+    double w2_camhqp_[2];
+    double w3_camhqp_[2];
     
-    Eigen::MatrixXd H_camhqp_[2], A_camhqp_[2];
-    Eigen::MatrixXd J_camhqp_[2];
-    Eigen::VectorXd g_camhqp_[2], u_dot_camhqp_[2], qpres_camhqp_, ub_camhqp_[2],lb_camhqp_[2], ubA_camhqp_[2], lbA_camhqp_[2];
-    Eigen::VectorXd q_dot_camhqp_[2];
+    // Eigen::MatrixXd H_camhqp_[2], A_camhqp_[2];
+    // Eigen::MatrixXd J_camhqp_[2];
+    // Eigen::VectorXd g_camhqp_[2], u_dot_camhqp_[2], qpres_camhqp_, ub_camhqp_[2],lb_camhqp_[2], ubA_camhqp_[2], lbA_camhqp_[2];
+    // Eigen::VectorXd q_dot_camhqp_[2];
 
-    int control_joint_idx_camhqp_[10]; // original number -> 6 (DG) // IROS -> 8 (MJ)
-    int last_solved_hierarchy_num_camhqp_;
+    int control_joint_idx_camhqp_[10]; // original number -> 6 (DG)
     unsigned int torque_flag_x = 0, torque_flag_y = 0; 
+
     ///////////////////////////////////////////////////
 
     /////////////////////////MOMENTUM OBSERVER////////////////////////////////////////////////
@@ -1885,17 +1882,42 @@ public:
     void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L);
     void FootTorqueController(Eigen::Vector3d T_R, Eigen::Vector3d T_L);
     void FootForceController(Eigen::Vector3d F_R, Eigen::Vector3d F_L);
-    void getFootTrajectory_Kajita();
-    void getPelvTrajectory_kajita();
+    void CentroidalMomentCalculator();
+    void HqpCamController();
+    void getSelectedCMM(Eigen::MatrixXd &cmm_, int joint_idx[], const int joint_dim);
     double LPF(double x, double x_LPF);
+    void getWieberComTrajectory();
+    void WieberMPC(double MPC_freq, double preview_window, int MPC_synchro_freq);
+    void CartTableModel(Eigen::MatrixXd &A, Eigen::VectorXd &B, Eigen::MatrixXd &C, double g, double h, double T);
+    void CartTableModelMPC(Eigen::MatrixXd &A, Eigen::VectorXd &B, Eigen::MatrixXd &C, Eigen::MatrixXd &P_ps, Eigen::MatrixXd &P_pu, Eigen::MatrixXd &P_vs, Eigen::MatrixXd &P_vu, Eigen::MatrixXd &P_zs, Eigen::MatrixXd &P_zu, double g, double h, double T, int N);
+    void CoMStateEstimationEKF();
+    void KalmanStateUpdate(Eigen::VectorXd &xhat, Eigen::VectorXd yhat, unsigned int xdim, unsigned int ydim, Eigen::MatrixXd A, Eigen::VectorXd B, Eigen::MatrixXd H, Eigen::MatrixXd Q, Eigen::MatrixXd R, Eigen::MatrixXd &P);
+    
+    void getCpsTrajectory();
+    Eigen::Vector2d getCpsTrajectory(double dT_limit, double cp_offset_x, double cp_offset_y);
+    void getCptTrajectory();
+    Eigen::Vector2d getFutureCpsTrajectory(double dT_limit, double cp_offset_x, double cp_offset_y);
+
+    void SupportPolygonConstraint(Eigen::Vector2d &zmp_);
 
     bool is_left_foot_support = false;
     bool is_right_foot_support = false;
 
-    bool is_dsp1 = true;
+    bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
+    bool is_cam_ctrl = true;
+    bool is_hqp_init = true;
+    bool is_mpc_init = true;
+    bool is_com_init = true;
+    bool is_est_init = true;
+    bool is_cps_ctrl = true;
+    bool is_delayed_cps_ctrl = true;
+    bool is_cpt_ctrl = true;
+    bool is_step_change = false;
+    unsigned int num_contact_;
 
+    // Ankle strategy
     Eigen::Vector3d right_ankle_force; 
     Eigen::Vector3d left_ankle_force; 
     Eigen::Vector3d right_ankle_torque; 
@@ -1905,13 +1927,68 @@ public:
     
     double R_ankle_roll_input = 0.0;
     double R_ankle_pitch_input = 0.0;
+    double R_ankle_yaw_input = 0.0;
 
     double L_ankle_roll_input = 0.0;
     double L_ankle_pitch_input = 0.0;
+    double L_ankle_yaw_input = 0.0;
 
     double pelvis_roll_input = 0.0;
     double pelvis_pitch_input = 0.0;
     double pelvis_yaw_input = 0.0;
+
+    // Hip strategy
+    Eigen::Vector3d del_tau;
+    Eigen::Vector3d CAM_ref;
+    Eigen::Vector3d CAM_ref_prev;
+
+    // HQP
+    std::vector<CQuadraticProgram> QP_camhqp_;
+    
+    Eigen::MatrixXd H_camhqp_[2], A_camhqp_[2];
+    Eigen::MatrixXd J_camhqp_[2];
+    Eigen::VectorXd g_camhqp_[2], 
+                    u_dot_camhqp_[2], 
+                    qpres_camhqp_, 
+                    ub_camhqp_[2],lb_camhqp_[2], 
+                    ubA_camhqp_[2], lbA_camhqp_[2];
+    Eigen::VectorXd q_dot_camhqp_[2];
+    int last_solved_hierarchy_num_camhqp_ = 0;
+
+    // WIEBER MPC
+    Eigen::VectorXd MPC_input_x_;
+    Eigen::VectorXd MPC_input_y_;
+
+    // EKF State estimation
+    Eigen::MatrixXd Px_kalman_;
+    Eigen::MatrixXd Py_kalman_;
+    
+    Eigen::VectorXd x_est_X;
+    Eigen::VectorXd x_est_Y;
+    Eigen::VectorXd x_est_Z;
+
+    Eigen::VectorXd y_est_X;
+    Eigen::VectorXd y_est_Y;
+    Eigen::VectorXd y_est_Z;
+
+    Eigen::Vector3d com_estimated_;
+    Eigen::Vector3d com_estimated_dot_;
+    Eigen::Vector2d zmp_estimated_;
+
+    // Englsberger (CP control)
+    Eigen::Vector2d cp_next_CPS_;
+    Eigen::Vector2d cp_eos_CPS;
+    Eigen::Vector2d com_next_CPS_; 
+
+    Eigen::Vector2d cp_next_CPT_;
+    Eigen::Vector2d cp_eos_CPT;
+    Eigen::Vector2d com_next_CPT_; 
+
+    double t_start_ssp_ = 0.0;
+    double t_start_dT = 0.0;
+    // Wieber MPC
+
+     
 
 private:    
     //////////////////////////////// Myeong-Ju
