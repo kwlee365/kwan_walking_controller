@@ -579,6 +579,7 @@ public:
     Eigen::Vector3d lacromion_rpy_current_from_global_;
     Eigen::Vector3d racromion_rpy_current_from_global_;
 
+    Eigen::Isometry3d pelvis_transform_pre_desired_from_;
     Eigen::Isometry3d upperbody_transform_pre_desired_from_;
     Eigen::Isometry3d head_transform_pre_desired_from_;
     Eigen::Isometry3d lfoot_transform_pre_desired_from_;
@@ -1486,23 +1487,31 @@ public:
     Eigen::VectorQd q_prev_MJ_;
 
     Eigen::Vector12d q_des_;
+    Eigen::Vector12d qdot_des_;
+    Eigen::Vector12d q_des_prev_;
     
     Eigen::Isometry3d pelv_trajectory_support_; //local frame
-    
+    Eigen::Isometry3d pelv_trajectory_support_pre_; //local frame
+    Eigen::Isometry3d pelv_trajectory_support_fast_;
+    Eigen::Isometry3d pelv_trajectory_support_slow_;
+
     Eigen::Isometry3d rfoot_trajectory_support_;  //local frame
-    Eigen::Isometry3d lfoot_trajectory_support_;
+    Eigen::Isometry3d rfoot_trajectory_support_pre_;  //local frame
+    Eigen::Isometry3d rfoot_trajectory_support_fast_;  
+    Eigen::Isometry3d rfoot_trajectory_support_slow_;  
+
+    Eigen::Isometry3d lfoot_trajectory_support_;  //local frame
+    Eigen::Isometry3d lfoot_trajectory_support_pre_;  //local frame
+    Eigen::Isometry3d lfoot_trajectory_support_fast_;
+    Eigen::Isometry3d lfoot_trajectory_support_slow_;
+
+
     Eigen::Vector3d rfoot_trajectory_euler_support_;
     Eigen::Vector3d lfoot_trajectory_euler_support_;
 
     Eigen::Isometry3d pelv_trajectory_float_; //pelvis frame
-    Eigen::Isometry3d rfoot_trajectory_float_;
-    Eigen::Isometry3d lfoot_trajectory_float_;
-
-    Eigen::Isometry3d lfoot_trajectory_float_fast_;
-    Eigen::Isometry3d lfoot_trajectory_float_slow_;
-
-    Eigen::Isometry3d rfoot_trajectory_float_fast_;
-    Eigen::Isometry3d rfoot_trajectory_float_slow_;
+    Eigen::Isometry3d pelv_trajectory_float_fast_;
+    Eigen::Isometry3d pelv_trajectory_float_slow_;
 
     Eigen::Vector3d pelv_support_euler_init_;
     Eigen::Vector3d lfoot_support_euler_init_;
@@ -1586,6 +1595,9 @@ public:
     Eigen::Isometry3d supportfoot_float_current_; 
 
     Eigen::Isometry3d pelv_support_current_;
+    Eigen::Isometry3d pelv_support_current_fast_;
+    Eigen::Isometry3d pelv_support_current_slow_;
+
     Eigen::Isometry3d lfoot_support_current_;
     Eigen::Isometry3d rfoot_support_current_;
 
@@ -1885,6 +1897,7 @@ public:
     void CentroidalMomentCalculator();
     void HqpCamController();
     void getSelectedCMM(Eigen::MatrixXd &cmm_, int joint_idx[], const int joint_dim);
+    void getSelectedCMM_VirtualJoint(Eigen::MatrixXd &cmm_, int joint_idx[], const int joint_dim);
     double LPF(double x, double x_LPF);
     void getWieberComTrajectory();
     void WieberMPC(double MPC_freq, double preview_window, int MPC_synchro_freq);
@@ -1898,6 +1911,19 @@ public:
     void getCptTrajectory();
     Eigen::Vector2d getFutureCpsTrajectory(double dT_limit, double cp_offset_x, double cp_offset_y);
 
+    void getWieberComTrajectory_snap();
+    void SnapWieberMPC(double MPC_freq, double preview_window, int MPC_synchro_freq);
+    void SnapCartTableModel(Eigen::MatrixXd &A, Eigen::VectorXd &B, Eigen::MatrixXd &C, double g, double h, double T);
+    void SnapCartTableModelMPC(Eigen::MatrixXd &A, Eigen::VectorXd &B, Eigen::MatrixXd &C, Eigen::MatrixXd &P_ps, Eigen::MatrixXd &P_pu, Eigen::MatrixXd &P_vs, Eigen::MatrixXd &P_vu, Eigen::MatrixXd &P_zs, Eigen::MatrixXd &P_zu, double g, double h, double T, int N);
+
+    void JacobianLegIK();
+    void CoMJacobianLegIK();
+    void CamComJacobianLegIK();
+    void SupportCoMJacobianLegIK();
+    void SupportCoMJacobianWBIK();
+
+    void getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM);
+
     void SupportPolygonConstraint(Eigen::Vector2d &zmp_);
 
     bool is_left_foot_support = false;
@@ -1909,15 +1935,20 @@ public:
     bool is_cam_ctrl = true;
     bool is_hqp_init = true;
     bool is_mpc_init = true;
+    bool is_cp_mpc_init = true;
     bool is_com_init = true;
     bool is_est_init = true;
     bool is_cps_ctrl = true;
     bool is_delayed_cps_ctrl = true;
     bool is_cpt_ctrl = true;
     bool is_step_change = false;
+    bool is_ik_init_ = true;
+    bool is_save_init_ = true;
+    bool is_foot_traj_init_ = true;
+    bool is_pelv_traj_init_ = true;
     unsigned int num_contact_;
 
-    // Ankle strategy
+    // ZMP controller
     Eigen::Vector3d right_ankle_force; 
     Eigen::Vector3d left_ankle_force; 
     Eigen::Vector3d right_ankle_torque; 
@@ -1937,7 +1968,7 @@ public:
     double pelvis_pitch_input = 0.0;
     double pelvis_yaw_input = 0.0;
 
-    // Hip strategy
+    // CAM controller
     Eigen::Vector3d del_tau;
     Eigen::Vector3d CAM_ref;
     Eigen::Vector3d CAM_ref_prev;
@@ -1986,9 +2017,123 @@ public:
 
     double t_start_ssp_ = 0.0;
     double t_start_dT = 0.0;
-    // Wieber MPC
 
-     
+    // Snap Wieber
+    Eigen::Vector4d x_hat_snap;
+    Eigen::Vector4d y_hat_snap;
+    Eigen::Vector4d x_hat_p_snap;
+    Eigen::Vector4d y_hat_p_snap;
+
+    Eigen::Vector4d x_hat_thread_snap;
+    Eigen::Vector4d y_hat_thread_snap;
+    Eigen::Vector4d x_hat_p_thread_snap;
+    Eigen::Vector4d y_hat_p_thread_snap;
+
+    Eigen::Vector4d x_hat_thread2_snap;
+    Eigen::Vector4d y_hat_thread2_snap;
+    Eigen::Vector4d x_hat_p_thread2_snap;
+    Eigen::Vector4d y_hat_p_thread2_snap;
+
+    Eigen::Vector4d x_hat_r_snap;
+    Eigen::Vector4d y_hat_r_snap;
+    Eigen::Vector4d x_hat_r_p_snap;
+    Eigen::Vector4d y_hat_r_p_snap;
+    Eigen::Vector4d x_hat_r_sc_snap;
+    Eigen::Vector4d y_hat_r_sc_snap;
+    Eigen::Vector4d x_hat_r_p_sc_snap;
+    Eigen::Vector4d y_hat_r_p_sc_snap;
+
+    Eigen::Vector4d x_mpc_i_snap;
+    Eigen::Vector4d y_mpc_i_snap; 
+
+    Eigen::Vector4d x_diff_snap;
+    Eigen::Vector4d y_diff_snap;
+
+    // CoM Jacobian based Whole Body Inverse Kinematics
+    CQuadraticProgram QP_com_jacbian_ik;
+
+    // pelvis frame // 
+    // trajectory
+    Eigen::Vector3d com_trajectory_float_;
+    Eigen::Vector3d com_trajectory_float_fast_;
+    Eigen::Vector3d com_trajectory_float_slow_;
+
+    Eigen::Vector3d com_dot_trajectory_float_;
+    Eigen::Vector3d com_dot_trajectory_float_fast_;
+    Eigen::Vector3d com_dot_trajectory_float_slow_;
+
+    Eigen::Isometry3d rfoot_trajectory_float_;
+    Eigen::Isometry3d rfoot_trajectory_float_pre_;
+    Eigen::Isometry3d rfoot_trajectory_float_fast_;
+    Eigen::Isometry3d rfoot_trajectory_float_slow_;
+
+    Eigen::Isometry3d lfoot_trajectory_float_;
+    Eigen::Isometry3d lfoot_trajectory_float_pre_;
+    Eigen::Isometry3d lfoot_trajectory_float_fast_;
+    Eigen::Isometry3d lfoot_trajectory_float_slow_;
+
+    Eigen::Vector6d rfoot_vel_trajectory_float_;
+    Eigen::Vector6d rfoot_vel_trajectory_float_fast_;
+    Eigen::Vector6d rfoot_vel_trajectory_float_slow_;
+
+    Eigen::Vector6d lfoot_vel_trajectory_float_;
+    Eigen::Vector6d lfoot_vel_trajectory_float_fast_;
+    Eigen::Vector6d lfoot_vel_trajectory_float_slow_;
+
+    Eigen::Vector3d com_desired_dot_;
+    Eigen::Vector3d com_desired_prev_;
+
+    Eigen::Vector3d com_trajectory_support_;
+    Eigen::Vector3d com_trajectory_support_fast_;
+    Eigen::Vector3d com_trajectory_support_slow_;
+
+    Eigen::Vector3d com_dot_trajectory_support_;
+    Eigen::Vector3d com_dot_trajectory_support_fast_;
+    Eigen::Vector3d com_dot_trajectory_support_slow_;
+
+    Eigen::Vector6d lfoot_vel_trajectory_support_;  //local frame
+    Eigen::Vector6d lfoot_vel_trajectory_support_fast_;  //local frame
+    Eigen::Vector6d lfoot_vel_trajectory_support_slow_;  //local frame
+    
+    Eigen::Vector6d rfoot_vel_trajectory_support_;  //local frame
+    Eigen::Vector6d rfoot_vel_trajectory_support_fast_;  
+    Eigen::Vector6d rfoot_vel_trajectory_support_slow_;  
+
+    Eigen::Vector6d pelv_vel_trajectory_support_;
+    Eigen::Vector6d pelv_vel_trajectory_support_fast_;
+    Eigen::Vector6d pelv_vel_trajectory_support_slow_;
+
+    // robot state
+
+    Eigen::Vector3d com_support_current_fast_;
+    Eigen::Vector3d com_support_current_slow_;
+
+    Eigen::Isometry3d lfoot_support_current_fast_;
+    Eigen::Isometry3d lfoot_support_current_slow_;
+    Eigen::Isometry3d rfoot_support_current_fast_;
+    Eigen::Isometry3d rfoot_support_current_slow_;
+
+    Eigen::Vector6d lfoot_vel_support_current_;
+    Eigen::Vector6d lfoot_vel_support_current_fast_;
+    Eigen::Vector6d lfoot_vel_support_current_slow_;
+
+    Eigen::Vector6d rfoot_vel_support_current_;
+    Eigen::Vector6d rfoot_vel_support_current_fast_;
+    Eigen::Vector6d rfoot_vel_support_current_slow_;
+
+
+    Eigen::Isometry3d global_to_pelv_isometry_;
+    Eigen::Isometry3d global_to_pelv_isometry_fast_;
+    Eigen::Isometry3d global_to_pelv_isometry_slow_;
+
+    Eigen::Isometry3d pelv_to_support_isometry_;
+    Eigen::Isometry3d pelv_to_support_isometry_fast_;
+    Eigen::Isometry3d pelv_to_support_isometry_slow_;
+
+    Eigen::Vector3d com_transform_pre_desired_from_;
+
+
+
 
 private:    
     //////////////////////////////// Myeong-Ju
