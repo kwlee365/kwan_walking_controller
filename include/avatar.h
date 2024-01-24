@@ -91,7 +91,6 @@ public:
     CQuadraticProgram QP_motion_retargeting_rhand_;
     CQuadraticProgram QP_motion_retargeting_[3];    // task1: each arm, task2: relative arm, task3: hqp second hierarchy
     CQuadraticProgram QP_stepping_;
-    CQuadraticProgram QP_steptiming_;
     CQuadraticProgram QP_cpmpc_x_;
     CQuadraticProgram QP_cpmpc_y_;
     CQuadraticProgram QP_cpmpc_x_new_;
@@ -523,9 +522,12 @@ public:
     Eigen::MatrixXd jac_lhand_;
     Eigen::MatrixXd jac_rfoot_;
     Eigen::MatrixXd jac_lfoot_;
+    Eigen::MatrixXd jac_pelv_;
 
     Eigen::MatrixXd lfoot_to_com_jac_from_global_;
 	Eigen::MatrixXd rfoot_to_com_jac_from_global_;
+	Eigen::MatrixXd lfoot_to_pelv_jac_from_global_;
+	Eigen::MatrixXd rfoot_to_pelv_jac_from_global_;
     
     Eigen::Isometry3d pelv_transform_start_from_global_;
     Eigen::Isometry3d rfoot_transform_start_from_global_;
@@ -1891,9 +1893,9 @@ public:
     void SaveState();
     void StateMachine();
     void ZmpController();
-    void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L);
-    void FootTorqueController(Eigen::Vector3d T_R, Eigen::Vector3d T_L);
-    void FootForceController(Eigen::Vector3d F_R, Eigen::Vector3d F_L);
+    void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L, double &alpha);
+    void FootTorqueController(Eigen::Vector3d T_R, Eigen::Vector3d T_L, double alpha);
+    void FootForceController(Eigen::Vector3d F_R, Eigen::Vector3d F_L, double alpha);
     void CentroidalMomentCalculator();
     void HqpCamController();
     void getSelectedCMM(Eigen::MatrixXd &cmm_, int joint_idx[], const int joint_dim);
@@ -1918,13 +1920,19 @@ public:
 
     void JacobianLegIK();
     void CoMJacobianLegIK();
-    void CamComJacobianLegIK();
-    void SupportCoMJacobianLegIK();
-    void SupportCoMJacobianWBIK();
+    void CamComJacobianWBIK();
+    void HqpCamComJacobianWBIK();
 
     void getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM);
 
     void SupportPolygonConstraint(Eigen::Vector2d &zmp_);
+
+    // Collision avoidance
+    void getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_, int collision_pair);
+    double getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB);
+
+    // Stepping
+    void cpcontroller_MPC_LIPM(double MPC_freq, double preview_window);
 
     bool is_left_foot_support = false;
     bool is_right_foot_support = false;
@@ -1932,6 +1940,8 @@ public:
     bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
+    bool is_stepping_ctrl = false;
+    bool is_stepping_ctrl_over = false;
     bool is_cam_ctrl = true;
     bool is_hqp_init = true;
     bool is_mpc_init = true;
@@ -1946,6 +1956,7 @@ public:
     bool is_save_init_ = true;
     bool is_foot_traj_init_ = true;
     bool is_pelv_traj_init_ = true;
+    bool is_bolt_controller_init = true;
     unsigned int num_contact_;
 
     // ZMP controller
@@ -1959,10 +1970,16 @@ public:
     double R_ankle_roll_input = 0.0;
     double R_ankle_pitch_input = 0.0;
     double R_ankle_yaw_input = 0.0;
+    double R_ankle_roll_input_lpf = 0.0;
+    double R_ankle_pitch_input_lpf = 0.0;
+    double R_ankle_yaw_input_lpf = 0.0;
 
     double L_ankle_roll_input = 0.0;
     double L_ankle_pitch_input = 0.0;
     double L_ankle_yaw_input = 0.0;
+    double L_ankle_roll_input_lpf = 0.0;
+    double L_ankle_pitch_input_lpf = 0.0;
+    double L_ankle_yaw_input_lpf = 0.0;
 
     double pelvis_roll_input = 0.0;
     double pelvis_pitch_input = 0.0;
@@ -2105,6 +2122,8 @@ public:
 
     // robot state
 
+    Eigen::Vector3d com_float_current_fast_;
+    Eigen::Vector3d com_float_current_slow_;
     Eigen::Vector3d com_support_current_fast_;
     Eigen::Vector3d com_support_current_slow_;
 
@@ -2132,8 +2151,16 @@ public:
 
     Eigen::Vector3d com_transform_pre_desired_from_;
 
+    Eigen::Isometry3d lhand_trajectory_init_;
+    Eigen::Isometry3d rhand_trajectory_init_;
 
+    int alpha_step_thread_ = 0;
 
+    Eigen::MatrixXd w_cp;  
+    Eigen::MatrixXd w_zmp; 
+
+    double P_ssp_x_ = 0;
+    double P_ssp_y_ = 0;
 
 private:    
     //////////////////////////////// Myeong-Ju
