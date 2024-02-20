@@ -1106,7 +1106,7 @@ public:
     Eigen::VectorXd q_dot_hqpik_[4];
 
     int last_solved_hierarchy_num_;
-    const double equality_condition_eps_ = 1e-8;
+    const double equality_condition_eps_ = 1e-5;
     const double damped_puedoinverse_eps_ = 1e-5;
     ///////////////////////////////////////////////////
     
@@ -1226,13 +1226,15 @@ public:
     double del_F_x_next_ = 0;
     double del_F_y_next_ = 0;
     double del_F_x_ = 0;
-    double del_F_x_prev_ = 0;
     double del_F_x_LPF_ = 0;
     double del_F_y_ = 0;
     double del_F_x_thread_ = 0;
     double del_F_y_thread_ = 0;
-    double del_F_x_next_thread_ = 0;
-    double del_F_y_next_thread_ = 0;
+
+    Eigen::Vector2d del_F_x_thread_temp_;
+    Eigen::Vector2d del_F_y_thread_temp_;
+    Eigen::Vector2d del_F_x_thread_prev_;
+    Eigen::Vector2d del_F_y_thread_prev_;
     
     double cpmpc_des_zmp_x_thread_ = 0;
     double cpmpc_des_zmp_x_thread2_ = 0;
@@ -1531,9 +1533,6 @@ public:
 
     Eigen::VectorQd del_cmm_q_;
     unsigned int cmp_control_mode = 0;
-
-    double des_zmp_ssp_mpc_x_ = 0;
-    double des_zmp_ssp_mpc_y_ = 0;
 
     Eigen::Isometry3d pelv_support_start_;
     Eigen::Isometry3d pelv_support_init_;
@@ -1936,12 +1935,17 @@ public:
 
     bool is_left_foot_support = false;
     bool is_right_foot_support = false;
+    bool is_left_foot_support_thread = false;
+    bool is_right_foot_support_thread = false;
+    bool is_left_foot_support_mpc = false;
+    bool is_right_foot_support_mpc = false;
 
     bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
     bool is_stepping_ctrl = false;
     bool is_stepping_ctrl_over = false;
+
     bool is_cam_ctrl = true;
     bool is_hqp_init = true;
     bool is_mpc_init = true;
@@ -1957,6 +1961,7 @@ public:
     bool is_foot_traj_init_ = true;
     bool is_pelv_traj_init_ = true;
     bool is_bolt_controller_init = true;
+    bool is_dsp_optimization_init = true;
     unsigned int num_contact_;
 
     // ZMP controller
@@ -2154,13 +2159,43 @@ public:
     Eigen::Isometry3d lhand_trajectory_init_;
     Eigen::Isometry3d rhand_trajectory_init_;
 
+    // Stepping controller
+    void CPMPC_bolt_Controller_KW();
+    void CPMPC_bolt_Controller_KW_DSP_Optimization();
     int alpha_step_thread_ = 0;
+    double cp_eos_ssp_x_cpmpc_, cp_eos_ssp_y_cpmpc_;
+    double cp_eos_dsp_x_cpmpc_, cp_eos_dsp_y_cpmpc_;
 
     Eigen::MatrixXd w_cp;  
     Eigen::MatrixXd w_zmp; 
 
     double P_ssp_x_ = 0;
     double P_ssp_y_ = 0;
+
+    double des_zmp_ssp_mpc_x_ = 0;
+    double des_zmp_ssp_mpc_y_ = 0;
+    
+    double is_qp_solved = 0.0;
+
+    double del_F_x_prev_ = 0;
+    double del_F_x_diff_ = 0;
+    double del_F_x_interpol_ = 0;
+    
+    double del_F_y_prev_ = 0;
+    double del_F_y_diff_ = 0;
+    double del_F_y_interpol_ = 0;
+
+    // DSP optimization
+    Eigen::VectorXd dsp_input;
+    Eigen::VectorXd dsp_input_;
+
+    double u0_x_dsp_opt;
+    double u0_y_dsp_opt;
+
+    double F_x_nom_dsp_opt;
+    double F_y_nom_dsp_opt;
+    double b_x_nom_dsp_opt;
+    double b_y_nom_dsp_opt;
 
 private:    
     //////////////////////////////// Myeong-Ju
