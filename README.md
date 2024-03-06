@@ -11,4 +11,4 @@ CamComJacobianWBIK (computeFast)
 ### Knee bend prevention
 - getSignedDistanceFunction2()
 - getKneeBendPreventionMatrix()
-l_min and l_max are defined w.r.t link lengths and the knee joint angle boundaries. 
+    - l_min and l_max are defined w.r.t link lengths and the knee joint angle boundaries. 
