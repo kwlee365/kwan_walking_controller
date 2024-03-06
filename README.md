@@ -2,8 +2,13 @@
 
 ## Self-Collision Avoidance using Whole-Body Inverse Kinematics with Control Barrier Function
 
-## Newly added function.
-- StateMachine (computeSlow)
-- CamComJacobianWBIK (computeFast)
+CamComJacobianWBIK (computeFast)
 
-I think the joint limitation needs to be revised a little more.
+### Collision avoidance
+- getSignedDistanceFunction()
+- getSelfCollisionAvoidanceMatrix()
+
+### Knee bend prevention
+- getSignedDistanceFunction2()
+- getKneeBendPreventionMatrix()
+l_min and l_max are defined w.r.t link lengths and the knee joint angle boundaries. 

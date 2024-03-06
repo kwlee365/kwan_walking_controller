@@ -9,7 +9,7 @@ ofstream KW_graph4("/home/kwan/data/tocabi/KW_graph4.txt");
 ofstream KW_graph5("/home/kwan/data/tocabi/KW_graph5.txt");
 ofstream KW_graph6("/home/kwan/data/tocabi/KW_graph6.txt");
 ofstream KW_graph7("/home/kwan/data/tocabi/KW_graph7.txt");
-// ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt");
+ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt");
 // ofstream KW_graph9("/home/kwan/data/tocabi/KW_graph9.txt");
 
 AvatarController::AvatarController(RobotData &rd) : rd_(rd)
@@ -15327,7 +15327,7 @@ void AvatarController::getComTrajectory()
 
     com_desired_(0) = xd_mj_(0);
     com_desired_(1) = yd_mj_(0);
-    com_desired_(2) = 0.71;
+    com_desired_(2) = com_height_;
 
     if (walking_tick_mj == t_start_ + t_total_ - 1 && current_step_num_ != total_step_num_ - 1)
     {
@@ -15563,12 +15563,12 @@ void AvatarController::GravityCalculate_MJ()
 
 void AvatarController::parameterSetting()
 {
-    target_x_ = 0.0;
+    target_x_ = 3.0;
     target_y_ = 0.0;
     target_z_ = 0.0;
-    com_height_ = 0.71;
+    com_height_ = 0.73;
     target_theta_ = 0.0;
-    step_length_x_ = 0.1;
+    step_length_x_ = 0.2;
     step_length_y_ = 0.0;
     is_right_foot_swing_ = 0;
 
@@ -17895,7 +17895,8 @@ void AvatarController::getComTrajectory_mpc()
 
     com_desired_(0) = x_mpc_i_(0);
     com_desired_(1) = y_mpc_i_(0);
-    com_desired_(2) = 0.73;
+    // com_desired_(2) = 0.80;
+    com_desired_(2) = com_height_;
 
     com_desired_dot_(0) = x_mpc_i_(1);
     com_desired_dot_(1) = y_mpc_i_(1);
@@ -18392,14 +18393,14 @@ void AvatarController::getWieberComTrajectory_snap()
 
     com_desired_(0) = x_mpc_i_snap(0);
     com_desired_(1) = y_mpc_i_snap(0);
-    com_desired_(2) = 0.71;
+    com_desired_(2) = com_height_;
 
     Eigen::Vector2d zmp_;
     zmp_.setZero();
     Eigen::MatrixXd C_;
     C_.setZero(1, 4);
     double g = GRAVITY;
-    double h = 0.71;
+    double h = com_height_;
     C_(0, 0) = 1.0;
     C_(0, 1) = 0.0;
     C_(0, 2) = -h / g;
@@ -19016,7 +19017,7 @@ void AvatarController::getCpsTrajectory()
     zmp_desired_ = zmp_input_;
     cp_desired_ = cp_next_CPS_;
     com_desired_.segment(0, 2) = com_next_CPS_;
-    com_desired_(2) = 0.71;
+    com_desired_(2) = com_height_;
 
     // Support foot change
     if (walking_tick_mj == t_start_ + t_total_ - 1 && current_step_num_ != total_step_num_ - 1)
@@ -19293,7 +19294,7 @@ void AvatarController::getCptTrajectory()
     zmp_desired_ = zmp_input_;
     cp_desired_ = cp_next_CPT_;
     com_desired_.segment(0, 2) = com_next_CPT_;
-    com_desired_(2) = 0.71;
+    com_desired_(2) = com_height_;
 
     // Support foot change
     if (walking_tick_mj == t_start_ + t_total_ - 1 && current_step_num_ != total_step_num_ - 1)
@@ -20162,7 +20163,9 @@ void AvatarController::CamComJacobianWBIK()
 {
     const int variable_size = MODEL_DOF_VIRTUAL;
     const int constraint_size1 = MODEL_DOF_VIRTUAL; //[lb <=	x	<= 	ub] form constraints
-    const int constraint_size2 = 6;                 //[lbA <=	Ax 	<=	ubA] from constraints   -> collision pairs
+    const int constraint_size2_sca = 6;                 
+    const int constraint_size2_knee = 4;                 
+    const int constraint_size2 = constraint_size2_sca + constraint_size2_knee;                 //[lbA <=	Ax 	<=	ubA] from constraints   -> collision pairs
     const int control_size_com = 3;
     const int control_size_leg = 12;
     const int control_size_cam = 3;
@@ -20411,18 +20414,33 @@ void AvatarController::CamComJacobianWBIK()
     // Self Collision Avoidance Algorithm
     Eigen::MatrixXd A_sca;
     Eigen::VectorXd h_sca;
-    getSelfCollisionAvoidanceMatrix(A_sca, h_sca, constraint_size2);
+    getSelfCollisionAvoidanceMatrix(A_sca, h_sca, constraint_size2_sca);
+
+    // Knee-bend prevention algorithm
+    Eigen::MatrixXd A_knee;
+    Eigen::VectorXd h_knee;
+    getKneeBendPreventionMatrix(A_knee, h_knee);
 
     A.setZero(constraint_size2, variable_size);
-    A = A_sca;
+    A.block(0,                    0, constraint_size2_sca,  variable_size) = A_sca;
+    A.block(constraint_size2_sca, 0, constraint_size2_knee, variable_size) = A_knee;
     
     double sca_gain = 10.0; // if the gain is too high, QP will not be solved. -> 'QP SOLVE FAILED'
 
-    for (int i = 0; i<constraint_size2; i++)
+    for (int i = 0; i < constraint_size2; i++)
     {
-        lbA(i) = -sca_gain * h_sca(i);
-        ubA(i) = 1e8;
+        if(i < constraint_size2_sca)
+        {
+            lbA(i) = -sca_gain * h_sca(i);
+            ubA(i) = 1e8;
+        }
+        else
+        {
+            lbA(i) = -sca_gain * h_knee(i - constraint_size2_sca);
+            ubA(i) = 1e8;
+        }
     }
+
 
     QP_com_jacbian_ik.EnableEqualityCondition(equality_condition_eps_);
     QP_com_jacbian_ik.UpdateMinProblem(H, g);
@@ -20432,6 +20450,7 @@ void AvatarController::CamComJacobianWBIK()
 
     VectorXd q_dot_;
     VectorXd q_opt_;
+
 
     if (QP_com_jacbian_ik.SolveQPoases(200, q_opt_))
     {
@@ -20478,7 +20497,7 @@ void AvatarController::SupportPolygonConstraint(Eigen::Vector2d &zmp_)
 }
 
 double AvatarController::getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB)
-{
+{   // for Collision Avoidance
     // Signed distance
     double sd_AB = 0.0;
 
@@ -20558,6 +20577,59 @@ void AvatarController::getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eige
     J_.block(collision_idx_,0,1,MODEL_DOF_VIRTUAL) = J_lfoot_rfoot;
     h_(collision_idx_) = sd_btw_lfoot_rfoot;
     collision_idx_++;
+}
+
+double AvatarController::getSignedDistanceFunction2(LinkData &linkA_, LinkData &linkB_, Eigen::MatrixXd &J_AB)
+{   // for Knee Bend Prevention
+    double d_AB = 0;
+
+    Eigen::Vector3d posA_transform_current_from_global_; posA_transform_current_from_global_.setZero();
+    Eigen::Vector3d posB_transform_current_from_global_; posB_transform_current_from_global_.setZero();
+
+    posA_transform_current_from_global_ = pelv_yaw_rot_current_from_global_.transpose() * (linkA_.xpos - pelv_pos_current_);
+    posB_transform_current_from_global_ = pelv_yaw_rot_current_from_global_.transpose() * (linkB_.xpos - pelv_pos_current_);
+
+    d_AB =  (posA_transform_current_from_global_ - posB_transform_current_from_global_).norm();  // >=0 
+
+    // Signed distance Jacobian
+    Eigen::Vector3d normal_vector_btw_AB; normal_vector_btw_AB.setZero();
+    normal_vector_btw_AB = (posA_transform_current_from_global_ - posB_transform_current_from_global_) / (posA_transform_current_from_global_ - posB_transform_current_from_global_).norm();
+
+    J_AB.setZero(1, MODEL_DOF_VIRTUAL);
+    J_AB = normal_vector_btw_AB.transpose() * 
+          (pelv_yaw_rot_current_from_global_.transpose() * linkA_.Jac().block(0,0,3,MODEL_DOF_VIRTUAL) - 
+           pelv_yaw_rot_current_from_global_.transpose() * linkB_.Jac().block(0,0,3,MODEL_DOF_VIRTUAL));
+
+    return d_AB;
+}
+
+void AvatarController::getKneeBendPreventionMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_)
+{
+    J_.setZero(4, MODEL_DOF_VIRTUAL);   // Pairs : (Left hip - Left ankle), (Right hip - Right ankle)
+    h_.setZero(4);
+
+    double l_min = 0.65 - 0.05;
+    double l_max = 0.65 + 0.03;
+
+    // Left knee
+    Eigen::MatrixXd J_lhip_lfoot;
+    double d_btw_lhip_lfoot = 0.0;
+    d_btw_lhip_lfoot = getSignedDistanceFunction2(rd_.link_[Left_Hip], rd_.link_[Left_Foot], J_lhip_lfoot);
+    J_.block(0,0,1,MODEL_DOF_VIRTUAL) = J_lhip_lfoot;
+    J_.block(1,0,1,MODEL_DOF_VIRTUAL) = -J_lhip_lfoot;
+    h_(0) =  d_btw_lhip_lfoot - l_min;
+    h_(1) = -d_btw_lhip_lfoot + l_max;
+
+    // Right knee
+    Eigen::MatrixXd J_rhip_rfoot;
+    double d_btw_rhip_rfoot = 0.0;
+    d_btw_rhip_rfoot = getSignedDistanceFunction2(rd_.link_[Right_Hip], rd_.link_[Right_Foot], J_rhip_rfoot);
+    J_.block(2,0,1,MODEL_DOF_VIRTUAL) = J_rhip_rfoot;
+    J_.block(3,0,1,MODEL_DOF_VIRTUAL) = -J_rhip_rfoot;
+    h_(2) =  d_btw_rhip_rfoot - l_min;
+    h_(3) = -d_btw_rhip_rfoot + l_max;
+
+    KW_graph8  << d_btw_lhip_lfoot << " " << d_btw_rhip_rfoot << std::endl;
 }
 
 void AvatarController::cpcontroller_MPC_LIPM(double MPC_freq, double preview_window)

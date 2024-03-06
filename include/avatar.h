@@ -1930,6 +1930,8 @@ public:
     // Collision avoidance
     void getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_, int collision_pair);
     double getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB);
+    void getKneeBendPreventionMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_);
+    double getSignedDistanceFunction2(LinkData &linkA_, LinkData &linkB_, Eigen::MatrixXd &J_AB);
 
     // Stepping
     void cpcontroller_MPC_LIPM(double MPC_freq, double preview_window);
