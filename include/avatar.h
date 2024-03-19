@@ -27,6 +27,10 @@
 #include "tocabi_msgs/WalkingCommand.h"
 #include <std_msgs/Float32.h>
 
+// KW add
+#include <filesystem>
+#include <casadi/casadi.hpp>
+
 const int FILE_CNT = 14;
 
 const std::string FILE_NAMES[FILE_CNT] =
@@ -1930,8 +1934,6 @@ public:
     // Collision avoidance
     void getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_, int collision_pair);
     double getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB);
-    void getKneeBendPreventionMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_);
-    double getSignedDistanceFunction2(LinkData &linkA_, LinkData &linkB_, Eigen::MatrixXd &J_AB);
 
     // Stepping
     void cpcontroller_MPC_LIPM(double MPC_freq, double preview_window);
@@ -1942,6 +1944,12 @@ public:
     bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
+    bool is_dsp1_thread = false;
+    bool is_ssp_thread = false;
+    bool is_dsp2_thread = false;
+    bool is_dsp1_mpc = false;
+    bool is_ssp_mpc = false;
+    bool is_dsp2_mpc = false;
     bool is_stepping_ctrl = false;
     bool is_stepping_ctrl_over = false;
     bool is_cam_ctrl = true;
@@ -1955,6 +1963,7 @@ public:
     bool is_cpt_ctrl = true;
     bool is_step_change = false;
     bool is_ik_init_ = true;
+    bool is_print_init_ = true;
     bool is_save_init_ = true;
     bool is_foot_traj_init_ = true;
     bool is_pelv_traj_init_ = true;
@@ -2163,6 +2172,96 @@ public:
 
     double P_ssp_x_ = 0;
     double P_ssp_y_ = 0;
+
+    // NMPC (2024-03-08)
+    void dcmController_NMPC();
+    void getGradHessDcm_NMPC(Eigen::VectorXd &v, int state_length, int input_length, int total_num_constraint, double dt_MPC, int MPC_horizon, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
+    void dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double stepping_current_time, double ssp_ref_time, double dsp_ref_time, double w, double H, double dt_MPC, Eigen::VectorXd x_com_pos_MPC, Eigen::VectorXd x_com_vel_MPC, Eigen::VectorXd y_com_pos_MPC, Eigen::VectorXd y_com_vel_MPC);    CQuadraticProgram SQP_NMPC_DCM_;
+    bool is_dcm_nmpc_init = true;
+    bool is_nmpc_func_generation_init = true;
+    void CasADiFunctionGeneration();
+    void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
+    void EigenMatrixToCasadiDM(casadi::DM &casadi_dm, Eigen::MatrixXd eigen_matrix, int col, int row);
+    void EigenVectorToCasadiDM(casadi::DM &casadi_dm, Eigen::VectorXd eigen_vector, int length);
+    Eigen::MatrixXd CasadiDMVectorToEigenMatrix(std::vector<casadi::DM> casadi_dm_vector);
+    Eigen::VectorXd CasadiDMVectorToEigenVector(std::vector<casadi::DM> casadi_dm_vector);
+
+    bool knmpc_update_ {false};
+    std::atomic<bool> atb_knmpc_update_{false};
+    Eigen::VectorXd nmpc_ctrl_input;
+    Eigen::VectorXd nmpc_ctrl_input_diff;
+    Eigen::VectorXd nmpc_ctrl_input_prev;
+    Eigen::VectorXd nmpc_ctrl_input_thread;
+    int nmpc_dcm_interpol_cnt_ = 0;
+
+    double del_zmp_x_dcm_nmpc = 0.0;
+    double del_zmp_y_dcm_nmpc = 0.0;
+    double del_footstep_x_dcm_nmpc = 0.0;
+    double del_footstep_y_dcm_nmpc = 0.0;
+    double del_dcm_offset_x_dcm_nmpc = 0.0;
+    double del_dcm_offset_y_dcm_nmpc = 0.0;
+    double del_steptime_dcm_nmpc = 0.0;
+    double hiptorque_x_dcm_nmpc = 0.0;
+    double hiptorque_y_dcm_nmpc = 0.0;
+
+    double dU_x_prev = 0.0;
+    double dU_y_prev = 0.0;
+
+    struct KAIST_DCM_NMPC
+    {
+        // MPC param //
+        const int H = 10;
+        const double dt_MPC = 0.02; // 50 Hz
+        const int state_length = 2;
+        const int input_length = 9;
+        const int total_num_constraint = 13 * H;
+
+        // MPC Weight //
+        double w_dT = 100.0;
+
+        double w_xi_err_x = 1.0;
+        double w_p_c_x = 10.0;
+        double w_dU_x = 1e3;
+        double w_db_x = 1e4;
+        double w_ddtheta_y = 0.010;
+        
+        double w_xi_err_y = 1.0;
+        double w_p_c_y = 50.0;
+        double w_dU_y = 1e3;
+        double w_db_y = 1e4;
+        double w_ddtheta_x = 0.10; 
+
+        // Robot (TOCABI) //
+        double Foot_length = 0.3;
+        double Foot_width = 0.26;
+        double V_x_max = 0.3; double V_x_min = -0.3;
+        double V_y_max = 0.3; double V_y_min = -0.3;
+
+        double safety_factor = 0.8;
+        double p_c_x_max = safety_factor * (0.5*Foot_length);
+        double p_c_y_max = safety_factor * (0.5*Foot_width);
+        double p_c_x_min = safety_factor *(-0.5*Foot_length);
+        double p_c_y_min = safety_factor *(-0.5*Foot_width);
+
+        double dU_x_max =  0.2;
+        double dU_y_max =  0.1;
+        double dU_x_min = -0.2;
+        double dU_y_min = -0.1;
+        double dT_max = 0.2;
+        double dT_min = -0.2;
+        
+        double theta_x_max   = 40*DEG2RAD;  double theta_y_max   = 30*DEG2RAD;
+        double theta_x_min   =-40*DEG2RAD;  double theta_y_min   =-30*DEG2RAD;        
+        double dtheta_x_max  = 200*DEG2RAD;  double dtheta_y_max  = 200*DEG2RAD;
+        double dtheta_x_min  =-200*DEG2RAD;  double dtheta_y_min  =-200*DEG2RAD;
+        double ddtheta_x_max = 1000*DEG2RAD; double ddtheta_y_max = 1000*DEG2RAD;
+        double ddtheta_x_min =-1000*DEG2RAD; double ddtheta_y_min =-1000*DEG2RAD;
+
+        std::string prefix_code = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_function/";   // The user should modify this variable your own directory.
+        std::string prefix_lib  = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_lib/";
+        std::string func_name   = "NMPC_func.c";
+        std::string lib_name    = "lib_NMPC_func.so";
+    };
 
 private:    
     //////////////////////////////// Myeong-Ju
