@@ -7,10 +7,12 @@ ofstream KW_graph3("/home/kwan/data/tocabi/KW_graph3.txt"); // CP-MPC x dir
 ofstream KW_graph4("/home/kwan/data/tocabi/KW_graph4.txt"); // CP-MPC y dir
 ofstream KW_graph5("/home/kwan/data/tocabi/KW_graph5.txt"); // CP-MPC opt var
 ofstream KW_graph6("/home/kwan/data/tocabi/KW_graph6.txt"); // Stepping Controller
-ofstream KW_graph7("/home/kwan/data/tocabi/KW_graph7.txt");
-ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt");
-ofstream KW_graph9("/home/kwan/data/tocabi/KW_graph9.txt");
-ofstream KW_graph10("/home/kwan/data/tocabi/KW_graph10.txt");
+ofstream KW_graph7("/home/kwan/data/tocabi/KW_graph7.txt"); // DCM Reference X dir in the CP-NMPC
+ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt"); // DCM Reference Y dir in the CP-NMPC
+ofstream KW_graph9("/home/kwan/data/tocabi/KW_graph9.txt"); // DCM Reference X dir in the COM Generator
+ofstream KW_graph10("/home/kwan/data/tocabi/KW_graph10.txt");   // DCM Reference Y dir in the COM Generator
+ofstream KW_graph11("/home/kwan/data/tocabi/KW_graph11.txt");
+ofstream KW_graph12("/home/kwan/data/tocabi/KW_graph12.txt");
 
 AvatarController::AvatarController(RobotData &rd) : rd_(rd)
 {
@@ -15560,14 +15562,14 @@ void AvatarController::GravityCalculate_MJ()
 
 void AvatarController::parameterSetting()
 {
-    target_x_ = 3.0;
+    target_x_ = 1.0;
     target_y_ = 0.0;
     target_z_ = 0.0;
     com_height_ = 0.73;
     target_theta_ = 0.0;
     step_length_x_ = 0.1;
     step_length_y_ = 0.0;
-    is_right_foot_swing_ = 0;
+    is_right_foot_swing_ = 1;
 
     // step stride : 0.1 m //
     t_rest_init_ = 0.12 * hz_; // Slack, 0.9 step time
@@ -16774,6 +16776,16 @@ void AvatarController::ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L
 
     zmp_ = zmp_desired_;
     zmp_ = zmp_ + del_zmp; // del CP
+
+    // if(is_ssp == true)
+    // {
+    //     zmp_(0) += del_zmp_x_dcm_nmpc;
+    //     zmp_(1) += del_zmp_y_dcm_nmpc;
+    // }
+    // else if (is_dsp1 == true || is_dsp2 == true)
+    // {
+    //     zmp_ = zmp_ + del_zmp; // del CP
+    // }
     
     P_R = rfoot_support_current_.translation().head(2);
     P_L = lfoot_support_current_.translation().head(2);
@@ -17311,8 +17323,8 @@ void AvatarController::CentroidalMomentCalculator()
     double behind_foot_length_x = 0.12;
     double foot_width_y = 0.08;
 
-    del_cmp(0) = 1.6 * (cp_measured_(0) - cp_desired_(0));
-    del_cmp(1) = 1.5 * (cp_measured_(1) - cp_desired_(1));
+    del_cmp(0) = 1.7 * (cp_measured_(0) - cp_desired_(0));
+    del_cmp(1) = 2.0 * (cp_measured_(1) - cp_desired_(1));
 
     del_cmp(0) = DyrosMath::minmax_cut(del_cmp(0),
                                        -(behind_foot_length_x * support_margin + del_tau_limit(0) / M_G),
@@ -17924,6 +17936,7 @@ void AvatarController::getComTrajectory_mpc()
 
     nmpc_lin_spline = DyrosMath::minmax_cut(nmpc_lin_spline, 0.0, 1.0);
 
+    KAIST_DCM_NMPC knmpc;
     del_zmp_x_dcm_nmpc = nmpc_ctrl_input(0);
     del_zmp_y_dcm_nmpc = nmpc_ctrl_input(1);
     del_footstep_x_dcm_nmpc = nmpc_ctrl_input(2);
@@ -17931,18 +17944,41 @@ void AvatarController::getComTrajectory_mpc()
     del_dcm_offset_x_dcm_nmpc = nmpc_ctrl_input(4);
     del_dcm_offset_y_dcm_nmpc = nmpc_ctrl_input(5);
     del_steptime_dcm_nmpc = nmpc_ctrl_input(6);
-    hiptorque_x_dcm_nmpc = nmpc_ctrl_input(7);
-    hiptorque_y_dcm_nmpc = nmpc_ctrl_input(8);
+    hiptorque_x_dcm_nmpc = knmpc.J_x * nmpc_ctrl_input(7);
+    hiptorque_y_dcm_nmpc = knmpc.J_y * nmpc_ctrl_input(8);
 
+    double stepping_start_time = t_start_ + t_double1_ + t_rest_init_;
+    double T_nom = (t_total_const_ - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_))/hz_;
     del_F_(0) = foot_step_support_frame_(current_step_num_ , 0);
     del_F_(1) = foot_step_support_frame_(current_step_num_ , 1);
     // del_F_(0) = foot_step_support_frame_(current_step_num_ , 0) + del_footstep_x_dcm_nmpc;
     // del_F_(1) = foot_step_support_frame_(current_step_num_ , 1) + del_footstep_y_dcm_nmpc;
+    // if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
+    // {
+    //     // Footstep
+    //     del_F_(0) = foot_step_support_frame_(current_step_num_ , 0) + del_footstep_x_dcm_nmpc;
+    //     del_F_(1) = foot_step_support_frame_(current_step_num_ , 1) + del_footstep_y_dcm_nmpc;
+
+    //     // Step time
+    //     if(walking_tick_mj - stepping_start_time < (T_nom + del_steptime_dcm_nmpc) * hz_ - zmp_modif_time_margin_ - 1 )
+    //     {           
+    //         t_total_ = (T_nom + del_steptime_dcm_nmpc) * hz_ + t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_;
+    //         t_total_ = DyrosMath::minmax_cut(t_total_, t_total_const_ - 0.2*hz_, t_total_const_ + 0.2*hz_);
+    //         t_last_ = t_start_ + t_total_ - 1;
+    //     }
+    // }
+    // else
+    // {
+    //     del_F_(0) = foot_step_support_frame_(current_step_num_ , 0);
+    //     del_F_(1) = foot_step_support_frame_(current_step_num_ , 1);
+    // }
 
     KW_graph6 << (ZMP_X_REF_ + del_zmp_x_dcm_nmpc) << " " << (ZMP_Y_REF_ + del_zmp_y_dcm_nmpc) << " "
               << (ZMP_X_REF_ + del_zmp(0)) << " " << (ZMP_Y_REF_ + del_zmp(1)) << " "
-              << (foot_step_support_frame_(current_step_num_ , 0) + del_footstep_x_dcm_nmpc) << " " <<  (foot_step_support_frame_(current_step_num_ , 1) + del_footstep_y_dcm_nmpc)
-              << std::endl;
+              << (foot_step_support_frame_(current_step_num_ , 0) + del_footstep_x_dcm_nmpc) << " " <<  (foot_step_support_frame_(current_step_num_ , 1) + del_footstep_y_dcm_nmpc) << " "
+              << del_dcm_offset_x_dcm_nmpc << " " << del_dcm_offset_y_dcm_nmpc << " "
+              << T_nom << " " << T_nom + del_steptime_dcm_nmpc << " " 
+              << hiptorque_x_dcm_nmpc << " " << hiptorque_y_dcm_nmpc << std::endl;
     nmpc_dcm_interpol_cnt_++;
 
     ///////////////////////
@@ -21434,7 +21470,7 @@ void AvatarController::dcmController_NMPC()
 
     if(is_dcm_nmpc_init == true)
     {
-        SQP_NMPC_DCM_.InitializeProblemSize((state_length + input_length) * MPC_Horizon, total_num_constraint);
+        SQP_NMPC_DCM_.InitializeProblemSize((state_length + input_length) * MPC_Horizon, total_num_constraint * MPC_Horizon);
         std::cout << "NMPC Initialization Complete" << std::endl;
 
         is_dcm_nmpc_init = false;
@@ -21485,6 +21521,23 @@ void AvatarController::dcmController_NMPC()
 
                 v = v + 1.0 * dv;
 
+                Eigen::VectorXd xi_error_horizon_x_temp; xi_error_horizon_x_temp.setZero(MPC_Horizon);
+                Eigen::VectorXd xi_error_horizon_y_temp; xi_error_horizon_y_temp.setZero(MPC_Horizon);
+                for (int i = 0; i < state_length * MPC_Horizon; i++)
+                {
+                    if(i % state_length == 0)
+                    {
+                        xi_error_horizon_x_temp(i / state_length) = v(i);
+                    }
+                    else
+                    {
+                        xi_error_horizon_y_temp(i / state_length) = v(i);
+                    }
+                }
+                
+                KW_graph11 << xi_error_horizon_x_temp.transpose() << std::endl;
+                KW_graph12 << xi_error_horizon_y_temp.transpose() << std::endl;
+
                 iter = iter + 1;
             }
 
@@ -21528,7 +21581,7 @@ void AvatarController::dcmController_NMPC()
     KW_graph3 << dcm_x_ref_horizon(0) << " " << cp_measured_mpc_(0) << " " << ref_zmp_mpc_(mpc_tick, 0) << " " 
               << (ref_zmp_mpc_(mpc_tick, 0) + nmpc_ctrl_input_thread(0)) << " " << nmpc_ctrl_input_thread(2) << endl; 
     KW_graph4 << dcm_y_ref_horizon(0) << " " << cp_measured_mpc_(1) << " " << ref_zmp_mpc_(mpc_tick, 1) << " " 
-              << (ref_zmp_mpc_(mpc_tick, 1) + nmpc_ctrl_input_thread(1)) << " " << nmpc_ctrl_input_thread(3) << endl; 
+              << (ref_zmp_mpc_(mpc_tick, 1) + nmpc_ctrl_input_thread(1)) << " " << nmpc_ctrl_input_thread(3) << endl;
 }
 
 void AvatarController::getGradHessDcm_NMPC(Eigen::VectorXd &v, int state_length, int input_length, int total_num_constraint, double dt_MPC, int MPC_horizon, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA)
@@ -21783,8 +21836,11 @@ void AvatarController::dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double step
 {
     Eigen::VectorXd x_dcm_MPC, y_dcm_MPC;
 
-    x_dcm_MPC = x_com_pos_MPC + x_com_pos_MPC / w;
-    y_dcm_MPC = x_com_pos_MPC + y_com_vel_MPC / w;
+    x_dcm_MPC.setZero(125);
+    y_dcm_MPC.setZero(125);
+
+    x_dcm_MPC = x_com_pos_MPC.segment(0, 125)  + x_com_vel_MPC.segment(0, 125)  / w;
+    y_dcm_MPC = y_com_pos_MPC.segment(0, 125)  + y_com_vel_MPC.segment(0, 125)  / w;
 
     double stepping_current_time_temp = stepping_current_time;
 
@@ -21799,14 +21855,20 @@ void AvatarController::dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double step
 
             // This DCM-NMPC algorithm is only valid when the robot can walk within only SSP.
             // So, we have to neglect the DCM at the DSP.
+            // (***) TODO: Check the Ref DCM is correct.
         }
-
+        
         xi_ref_horizon(0, i) = x_dcm_MPC(cnt);
         xi_ref_horizon(1, i) = y_dcm_MPC(cnt);
 
         stepping_current_time_temp = stepping_current_time_temp + dt_MPC;
         cnt++;
     }
+
+    KW_graph7 << x_dcm_MPC.transpose() << std::endl;
+    KW_graph8 << y_dcm_MPC.transpose() << std::endl;
+    KW_graph9 << xi_ref_horizon.block(0,0,1,H) << std::endl;
+    KW_graph10 << xi_ref_horizon.block(1,0,1,H) << std::endl;
 }
 
 void AvatarController::CasADiFunctionGeneration()
@@ -22126,8 +22188,8 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     double g = GRAVITY;                 // [m/s^2]
     double h = com_height_;             // [m]
     double w = sqrt(g / h);             // [rad/s]
-    double J_x = 5.0;
-    double J_y = 5.0;
+    double J_x = knmpc.J_x;
+    double J_y = knmpc.J_y;
 
     double T_dsp_ref = (t_rest_init_ + t_double1_ + t_double2_ + t_rest_last_) / hz_;
     double T_ssp_ref = t_total_const_ / hz_ - T_dsp_ref;
@@ -22195,20 +22257,37 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     X = v.segment(               0, H * state_length);
     U = v.segment(H * state_length, H * input_length);
 
+    double w_dT = w_dT_temp;
+
+    Eigen::VectorXd w_xi_err_x; w_xi_err_x.setZero(H);
+    double w_p_c_x = w_p_c_x_temp;
+    double w_dU_x = w_dU_x_temp;
+    double w_db_x = w_db_x_temp;
+    double w_ddtheta_y = w_ddtheta_y_temp;
+    
+    Eigen::VectorXd w_xi_err_y; w_xi_err_y.setZero(H);
+    double w_p_c_y = w_p_c_y_temp;
+    double w_dU_y = w_dU_y_temp;
+    double w_db_y = w_db_y_temp;
+    double w_ddtheta_x = w_ddtheta_x_temp; 
+
     for (int i = 0; i < H ; i++)
     {
-        gain_state_horizon(i*state_length + 0) = knmpc.w_xi_err_x;
-        gain_state_horizon(i*state_length + 1) = knmpc.w_xi_err_y;
+        w_xi_err_x(i) = (w_xi_err_x_temp - 1.0) * pow(i / (H - 1), 2) + 1.0;
+        w_xi_err_y(i) = (w_xi_err_y_temp - 1.0) * pow(i / (H - 1), 2) + 1.0;
 
-        gain_input_horizon(i*input_length + 0) = knmpc.w_p_c_x;
-        gain_input_horizon(i*input_length + 1) = knmpc.w_p_c_y;
-        gain_input_horizon(i*input_length + 2) = knmpc.w_dU_x;
-        gain_input_horizon(i*input_length + 3) = knmpc.w_dU_y;
-        gain_input_horizon(i*input_length + 4) = knmpc.w_db_x;
-        gain_input_horizon(i*input_length + 5) = knmpc.w_db_y;
-        gain_input_horizon(i*input_length + 6) = knmpc.w_dT;
-        gain_input_horizon(i*input_length + 7) = knmpc.w_ddtheta_x;
-        gain_input_horizon(i*input_length + 8) = knmpc.w_ddtheta_y;
+        gain_state_horizon(i*state_length + 0) = w_xi_err_x(i);
+        gain_state_horizon(i*state_length + 1) = w_xi_err_y(i);
+
+        gain_input_horizon(i*input_length + 0) = w_p_c_x;
+        gain_input_horizon(i*input_length + 1) = w_p_c_y;
+        gain_input_horizon(i*input_length + 2) = w_dU_x;
+        gain_input_horizon(i*input_length + 3) = w_dU_y;
+        gain_input_horizon(i*input_length + 4) = w_db_x;
+        gain_input_horizon(i*input_length + 5) = w_db_y;
+        gain_input_horizon(i*input_length + 6) = w_dT;
+        gain_input_horizon(i*input_length + 7) = w_ddtheta_x;
+        gain_input_horizon(i*input_length + 8) = w_ddtheta_y;
     }
 
     ////////////////////////////////////
@@ -22314,9 +22393,9 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     ubA7 = (-1.0) * CasadiDMVectorToEigenVector(cineq5_max_result);
 
     int stack_cnt = 0;
-    A.setZero(total_num_constraint, (state_length + input_length) * H);
-    lbA.setZero(total_num_constraint);
-    ubA.setZero(total_num_constraint);
+    A.setZero(total_num_constraint * H, (state_length + input_length) * H);
+    lbA.setZero(total_num_constraint * H);
+    ubA.setZero(total_num_constraint * H);
 
     A.block(stack_cnt * H, 0, state_length * H, (state_length + input_length) * H) = A1;
     lbA.segment(stack_cnt * H, state_length * H) = lbA1;

@@ -2207,35 +2207,37 @@ public:
     double dU_x_prev = 0.0;
     double dU_y_prev = 0.0;
 
+    // MPC Weight //
+    double w_dT_temp = 0.0;
+
+    double w_xi_err_x_temp = 0.0;
+    double w_p_c_x_temp = 0.0;
+    double w_dU_x_temp = 0.0;
+    double w_db_x_temp = 0.0;
+    double w_ddtheta_y_temp = 0.0;
+    
+    double w_xi_err_y_temp = 0.0;
+    double w_p_c_y_temp = 0.0;
+    double w_dU_y_temp = 0.0;
+    double w_db_y_temp = 0.0;
+    double w_ddtheta_x_temp = 0.0; 
+
     struct KAIST_DCM_NMPC
     {
         // MPC param //
-        const int H = 10;
+        const int H = 20;
         const double dt_MPC = 0.02; // 50 Hz
         const int state_length = 2;
         const int input_length = 9;
-        const int total_num_constraint = 13 * H;
-
-        // MPC Weight //
-        double w_dT = 100.0;
-
-        double w_xi_err_x = 1.0;
-        double w_p_c_x = 10.0;
-        double w_dU_x = 1e3;
-        double w_db_x = 1e4;
-        double w_ddtheta_y = 0.010;
-        
-        double w_xi_err_y = 1.0;
-        double w_p_c_y = 50.0;
-        double w_dU_y = 1e3;
-        double w_db_y = 1e4;
-        double w_ddtheta_x = 0.10; 
+        const int total_num_constraint = 13;
 
         // Robot (TOCABI) //
+        double J_x = 5.0;
+        double J_y = 5.0;
         double Foot_length = 0.3;
         double Foot_width = 0.26;
-        double V_x_max = 0.3; double V_x_min = -0.3;
-        double V_y_max = 0.3; double V_y_min = -0.3;
+        double V_x_max = 0.5; double V_x_min = -0.5;
+        double V_y_max = 0.5; double V_y_min = -0.5;
 
         double safety_factor = 0.8;
         double p_c_x_max = safety_factor * (0.5*Foot_length);
@@ -2247,7 +2249,7 @@ public:
         double dU_y_max =  0.1;
         double dU_x_min = -0.2;
         double dU_y_min = -0.1;
-        double dT_max = 0.2;
+        double dT_max = 0.0;
         double dT_min = -0.2;
         
         double theta_x_max   = 40*DEG2RAD;  double theta_y_max   = 30*DEG2RAD;
