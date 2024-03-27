@@ -121,7 +121,7 @@ int ceq0_v_func_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *s
 #define ceq0_v_func_SZ_ARG 9
 #define ceq0_v_func_SZ_RES 1
 #define ceq0_v_func_SZ_IW 0
-#define ceq0_v_func_SZ_W 370
+#define ceq0_v_func_SZ_W 90
 int ceq1_v_func(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
 int ceq1_v_func_alloc_mem(void);
 int ceq1_v_func_init_mem(int mem);
@@ -142,7 +142,7 @@ int ceq1_v_func_work_bytes(casadi_int *sz_arg, casadi_int* sz_res, casadi_int *s
 #define ceq1_v_func_SZ_ARG 12
 #define ceq1_v_func_SZ_RES 1
 #define ceq1_v_func_SZ_IW 0
-#define ceq1_v_func_SZ_W 74
+#define ceq1_v_func_SZ_W 44
 int cineq1_max_func(const casadi_real** arg, casadi_real** res, casadi_int* iw, casadi_real* w, int mem);
 int cineq1_max_func_alloc_mem(void);
 int cineq1_max_func_init_mem(int mem);

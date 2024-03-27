@@ -1581,6 +1581,10 @@ public:
     Eigen::Isometry3d pelv_float_current_;
     Eigen::Isometry3d lfoot_float_current_;
     Eigen::Isometry3d rfoot_float_current_;
+    Eigen::Isometry3d lfoot_float_current_fast_;
+    Eigen::Isometry3d rfoot_float_current_fast_;
+    Eigen::Isometry3d lfoot_float_current_slow_;
+    Eigen::Isometry3d rfoot_float_current_slow_;
     Eigen::Isometry3d pelv_float_init_;
     Eigen::Isometry3d lfoot_float_init_;
     Eigen::Isometry3d rfoot_float_init_;
@@ -1897,7 +1901,7 @@ public:
     void SaveState();
     void StateMachine();
     void ZmpController();
-    void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L, double &alpha);
+    void ZmpDistributor(Eigen::Vector3d &F_R, Eigen::Vector3d &F_L, Eigen::Vector3d &T_R, Eigen::Vector3d &T_L, double &alpha_torque, double &alpha_force);
     void FootTorqueController(Eigen::Vector3d T_R, Eigen::Vector3d T_L, double alpha);
     void FootForceController(Eigen::Vector3d F_R, Eigen::Vector3d F_L, double alpha);
     void CentroidalMomentCalculator();
@@ -2174,7 +2178,8 @@ public:
     double P_ssp_y_ = 0;
 
     // NMPC (2024-03-08)
-    void dcmController_NMPC();
+    void dcmController_NMPC_KAIST();
+    void dcmController_NMPC_KAIST(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
     void getGradHessDcm_NMPC(Eigen::VectorXd &v, int state_length, int input_length, int total_num_constraint, double dt_MPC, int MPC_horizon, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
     void dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double stepping_current_time, double ssp_ref_time, double dsp_ref_time, double w, double H, double dt_MPC, Eigen::VectorXd x_com_pos_MPC, Eigen::VectorXd x_com_vel_MPC, Eigen::VectorXd y_com_pos_MPC, Eigen::VectorXd y_com_vel_MPC);    CQuadraticProgram SQP_NMPC_DCM_;
     bool is_dcm_nmpc_init = true;
@@ -2185,6 +2190,7 @@ public:
     void EigenVectorToCasadiDM(casadi::DM &casadi_dm, Eigen::VectorXd eigen_vector, int length);
     Eigen::MatrixXd CasadiDMVectorToEigenMatrix(std::vector<casadi::DM> casadi_dm_vector);
     Eigen::VectorXd CasadiDMVectorToEigenVector(std::vector<casadi::DM> casadi_dm_vector);
+    void ddthetaMinMax(double theta_x_prev, double dtheta_x_prev, double theta_y_prev, double dtheta_y_prev, double &ddtheta_x_min, double &ddtheta_x_max, double &ddtheta_y_min, double &ddtheta_y_max);
 
     bool knmpc_update_ {false};
     std::atomic<bool> atb_knmpc_update_{false};
@@ -2201,12 +2207,30 @@ public:
     double del_dcm_offset_x_dcm_nmpc = 0.0;
     double del_dcm_offset_y_dcm_nmpc = 0.0;
     double del_steptime_dcm_nmpc = 0.0;
+    double ddtheta_x_dcm_nmpc = 0.0;
+    double ddtheta_y_dcm_nmpc = 0.0;
     double hiptorque_x_dcm_nmpc = 0.0;
     double hiptorque_y_dcm_nmpc = 0.0;
 
+    double theta_x_dcm_nmpc_prev = 0.0;
+    double dtheta_x_dcm_nmpc_prev = 0.0;
+    double ddtheta_x_dcm_nmpc_prev = 0.0;
+    double theta_y_dcm_nmpc_prev = 0.0;
+    double dtheta_y_dcm_nmpc_prev = 0.0;
+    double ddtheta_y_dcm_nmpc_prev = 0.0;
+
+    Eigen::Vector2d del_zmp_nmpc;
+
     double dU_x_prev = 0.0;
     double dU_y_prev = 0.0;
-
+    double theta_x_prev = 0.0;
+    double theta_y_prev = 0.0;
+    double dtheta_x_prev = 0.0;
+    double dtheta_y_prev = 0.0;
+    double ddtheta_x_prev = 0.0;
+    double ddtheta_y_prev = 0.0;
+    double ddtheta_x_return = 0.0;
+    double ddtheta_y_return = 0.0;
     // MPC Weight //
     double w_dT_temp = 0.0;
 
@@ -2222,40 +2246,52 @@ public:
     double w_db_y_temp = 0.0;
     double w_ddtheta_x_temp = 0.0; 
 
+    Eigen::Vector3d dcm_measured_global;
+    Eigen::Vector3d dcm_measured_global_prev;
+    Eigen::Vector3d dcm_measured_global_LPF;
+    Eigen::Vector3d dcm_measured_float;
+    Eigen::Vector3d dcm_measured_support;
+
+    Eigen::Vector3d com_global_current_dot_prev;
+    Eigen::Vector3d com_global_current_dot_LPF;
+    
     struct KAIST_DCM_NMPC
     {
         // MPC param //
-        const int H = 20;
+        const int H = 10;
         const double dt_MPC = 0.02; // 50 Hz
         const int state_length = 2;
         const int input_length = 9;
         const int total_num_constraint = 13;
 
         // Robot (TOCABI) //
-        double J_x = 5.0;
-        double J_y = 5.0;
+        double J_x = 10.0;
+        double J_y = 10.0;
         double Foot_length = 0.3;
-        double Foot_width = 0.26;
-        double V_x_max = 0.5; double V_x_min = -0.5;
-        double V_y_max = 0.5; double V_y_min = -0.5;
+        double Foot_width = 0.20;
+        double V_x_max = 0.4; double V_x_min = -0.4;
+        double V_y_max = 0.4; double V_y_min = -0.4;
 
-        double safety_factor = 0.8;
-        double p_c_x_max = safety_factor * (0.5*Foot_length);
-        double p_c_y_max = safety_factor * (0.5*Foot_width);
+        double safety_factor = 1.0;
+        double p_c_x_max = safety_factor *( 0.5*Foot_length);
+        double p_c_y_max = safety_factor *( 0.5*Foot_width);
         double p_c_x_min = safety_factor *(-0.5*Foot_length);
         double p_c_y_min = safety_factor *(-0.5*Foot_width);
 
-        double dU_x_max =  0.2;
-        double dU_y_max =  0.1;
-        double dU_x_min = -0.2;
-        double dU_y_min = -0.1;
-        double dT_max = 0.0;
-        double dT_min = -0.2;
+        double dU_x_max = 0.3;
+        double dU_y_max = 0.3;
+        double dU_x_min =-0.2;
+        double dU_y_min =-0.2;
+        double dT_max = 0.2;
+        double dT_min =-0.2;
+
+        double kp = 9;
+        double kd = 6; // critical damping
         
-        double theta_x_max   = 40*DEG2RAD;  double theta_y_max   = 30*DEG2RAD;
-        double theta_x_min   =-40*DEG2RAD;  double theta_y_min   =-30*DEG2RAD;        
-        double dtheta_x_max  = 200*DEG2RAD;  double dtheta_y_max  = 200*DEG2RAD;
-        double dtheta_x_min  =-200*DEG2RAD;  double dtheta_y_min  =-200*DEG2RAD;
+        double theta_x_max   = 30*DEG2RAD; double theta_y_max   = 30*DEG2RAD;
+        double theta_x_min   =-30*DEG2RAD; double theta_y_min   =-30*DEG2RAD;        
+        double dtheta_x_max  = 500*DEG2RAD; double dtheta_y_max  = 500*DEG2RAD;
+        double dtheta_x_min  =-500*DEG2RAD; double dtheta_y_min  =-500*DEG2RAD;
         double ddtheta_x_max = 1000*DEG2RAD; double ddtheta_y_max = 1000*DEG2RAD;
         double ddtheta_x_min =-1000*DEG2RAD; double ddtheta_y_min =-1000*DEG2RAD;
 
