@@ -1944,24 +1944,16 @@ public:
 
     bool is_left_foot_support = false;
     bool is_right_foot_support = false;
-    bool is_left_foot_support_slow = false;
-    bool is_right_foot_support_slow = false;    
-    bool is_left_foot_support_fast = false;
-    bool is_right_foot_support_fast = false;
+    bool is_left_foot_support_thread = false;
+    bool is_right_foot_support_thread = false;
+    bool is_left_foot_support_mpc = false;
+    bool is_right_foot_support_mpc = false;
 
     bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
     bool is_dsp2_start = false;
     
-    bool is_dsp1_fast = false;
-    bool is_ssp_fast = false;
-    bool is_dsp2_fast = false;
-    
-    bool is_dsp1_slow = false;
-    bool is_ssp_slow = false;
-    bool is_dsp2_slow = false;
-
     bool is_dsp1_thread = false;
     bool is_ssp_thread = false;
     bool is_dsp2_thread = false;
@@ -2295,21 +2287,21 @@ public:
         double J_y = 10.0;
 
         double Foot_length = 0.3;
-        double Foot_width = 0.2;
+        double Foot_width  = 0.16;
 
-        double V_x_max = 1.0; double V_x_min = -1.0;
-        double V_y_max = 0.8; double V_y_min = -0.8;
+        double V_x_max = 10.0; double V_x_min = -10.0;
+        double V_y_max = 10.0; double V_y_min = -10.0;
 
         double safety_factor = 0.8;
-        double p_c_x_max = safety_factor *( 0.5*0.18);
+        double p_c_x_max = safety_factor *( 1.0*0.18);
         double p_c_y_max = safety_factor *( 0.5*Foot_width);
-        double p_c_x_min = safety_factor *(-0.5*0.12);
+        double p_c_x_min = safety_factor *(-1.0*0.12);
         double p_c_y_min = safety_factor *(-0.5*Foot_width);
 
         double dU_x_max = 0.3;
-        double dU_y_max = 0.2;
+        double dU_y_max = 0.25 + 0.12;
         double dU_x_min =-0.3;
-        double dU_y_min =-0.2;
+        double dU_y_min = 0.25 - 0.02;
         double dT_max = 0.2;
         double dT_min =-0.2;
 
