@@ -1,0 +1,67 @@
+DEG2RAD : 0.01745329251994329576923690768489
+
+# Whole-body Inverse Kinematics
+w_wbik : [100.0,         # Foot 
+          1.0,         # CoM
+          0.01,         # CAM
+          0.0005,      # Initial Pose Return
+          0.000001,    # Joint velocity regulation
+          0.00000001]  # Joint accleration regulation
+
+kp_wbik : [50.0,       # v lfoot
+           10.0,       # w lfoot     
+           50.0,       # v rfoot
+           10.0,       # w rfoot
+           20.0]       # v com
+
+# ZMP Control
+kp_torque_zmp_ctrl : [ 
+                      # DSP
+                      0.15,   # Kp_r_roll
+                      0.15,   # Kp_r_pitch
+                      0.15,   # Kp_l_roll
+                      0.15,   # Kp_l_pitch
+
+                      # SSP
+                      0.15,   # Kp_r_roll
+                      0.15,   # Kp_r_pitch
+                      0.05,   # Kp_l_roll
+                      0.05]   # Kp_l_pitch
+
+kv_torque_zmp_ctrl : [ 
+                      # DSP
+                      10.0,   # Kd_r_roll
+                      10.0,   # Kd_r_pitch
+                      10.0,   # Kd_l_roll
+                      10.0,   # Kd_l_pitch
+
+                      # SSP
+                      10.0,   # Kd_r_roll
+                      10.0,   # Kd_r_pitch
+                      50.0,   # Kd_l_roll
+                      50.0]   # Kd_l_pitch
+
+ankle_angle_const_zmp_ctrl : 10.0
+
+kp_force_zmp_ctrl : 0.0005
+
+kv_force_zmp_ctrl : 3.0
+
+foot_height_diff_const_zmp_ctrl : 0.01
+
+# Nonlinear DCM MPC
+w_nmpc : [100.0,       # time 
+
+          1.0,         # w_xi_err_x
+          1.0,         # w_p_c_x
+          10.0,        # w_dU_x
+          25000.0,     # w_db_x
+          0.1,         # w_ddtheta_y
+          
+          1.0,         # w_xi_err_x
+          1.0,         # w_p_c_x
+          10.0,        # w_dU_x
+          25000.0,     # w_db_x
+          0.1]         # w_ddtheta_y       
+
+

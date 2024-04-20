@@ -1929,7 +1929,7 @@ public:
     void JacobianLegIK();
     void CoMJacobianLegIK();
     void CamComJacobianWBIK();
-    void HqpCamComJacobianWBIK();
+    void CamComJacobianWBCLIK();
 
     void getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM);
 
@@ -1944,10 +1944,24 @@ public:
 
     bool is_left_foot_support = false;
     bool is_right_foot_support = false;
+    bool is_left_foot_support_slow = false;
+    bool is_right_foot_support_slow = false;    
+    bool is_left_foot_support_fast = false;
+    bool is_right_foot_support_fast = false;
 
     bool is_dsp1 = false;
     bool is_ssp = false;
     bool is_dsp2 = false;
+    bool is_dsp2_start = false;
+    
+    bool is_dsp1_fast = false;
+    bool is_ssp_fast = false;
+    bool is_dsp2_fast = false;
+    
+    bool is_dsp1_slow = false;
+    bool is_ssp_slow = false;
+    bool is_dsp2_slow = false;
+
     bool is_dsp1_thread = false;
     bool is_ssp_thread = false;
     bool is_dsp2_thread = false;
@@ -1956,6 +1970,8 @@ public:
     bool is_dsp2_mpc = false;
     bool is_stepping_ctrl = false;
     bool is_stepping_ctrl_over = false;
+    bool is_ssp_start = false;
+    bool is_ssp_over = false;
     bool is_cam_ctrl = true;
     bool is_hqp_init = true;
     bool is_mpc_init = true;
@@ -1972,6 +1988,7 @@ public:
     bool is_foot_traj_init_ = true;
     bool is_pelv_traj_init_ = true;
     bool is_bolt_controller_init = true;
+    bool is_vert_foot_init = true;
     unsigned int num_contact_;
 
     // ZMP controller
@@ -2191,6 +2208,8 @@ public:
     Eigen::MatrixXd CasadiDMVectorToEigenMatrix(std::vector<casadi::DM> casadi_dm_vector);
     Eigen::VectorXd CasadiDMVectorToEigenVector(std::vector<casadi::DM> casadi_dm_vector);
     void ddthetaMinMax(double theta_x_prev, double dtheta_x_prev, double theta_y_prev, double dtheta_y_prev, double &ddtheta_x_min, double &ddtheta_x_max, double &ddtheta_y_min, double &ddtheta_y_max);
+    void getVerticalFootTrajectory(double current_time, double start_time, double total_time, double z_init, double z_des, double z_end, Eigen::Vector3d &z_prev, double z_max, double hz);
+    void getHorizontalFootTrajectory(double current_time, double start_time, double total_time, double x_init, double x_des, double x_end, Eigen::Vector3d &x_prev, double hz);
 
     bool knmpc_update_ {false};
     std::atomic<bool> atb_knmpc_update_{false};
@@ -2218,6 +2237,9 @@ public:
     double theta_y_dcm_nmpc_prev = 0.0;
     double dtheta_y_dcm_nmpc_prev = 0.0;
     double ddtheta_y_dcm_nmpc_prev = 0.0;
+
+    double del_footstep_x_prev = 0.0;
+    double del_footstep_y_prev = 0.0;
 
     Eigen::Vector2d del_zmp_nmpc;
 
@@ -2255,6 +2277,10 @@ public:
     Eigen::Vector3d com_global_current_dot_prev;
     Eigen::Vector3d com_global_current_dot_LPF;
     
+    CQuadraticProgram QP_vert_foot_traj;
+    Eigen::Vector3d foot_x_desired;
+    Eigen::Vector3d foot_y_desired;
+    Eigen::Vector3d foot_z_desired;
     struct KAIST_DCM_NMPC
     {
         // MPC param //
@@ -2267,20 +2293,22 @@ public:
         // Robot (TOCABI) //
         double J_x = 10.0;
         double J_y = 10.0;
-        double Foot_length = 0.3;
-        double Foot_width = 0.20;
-        double V_x_max = 0.4; double V_x_min = -0.4;
-        double V_y_max = 0.4; double V_y_min = -0.4;
 
-        double safety_factor = 1.0;
-        double p_c_x_max = safety_factor *( 0.5*Foot_length);
+        double Foot_length = 0.3;
+        double Foot_width = 0.2;
+
+        double V_x_max = 1.0; double V_x_min = -1.0;
+        double V_y_max = 0.8; double V_y_min = -0.8;
+
+        double safety_factor = 0.8;
+        double p_c_x_max = safety_factor *( 0.5*0.18);
         double p_c_y_max = safety_factor *( 0.5*Foot_width);
-        double p_c_x_min = safety_factor *(-0.5*Foot_length);
+        double p_c_x_min = safety_factor *(-0.5*0.12);
         double p_c_y_min = safety_factor *(-0.5*Foot_width);
 
         double dU_x_max = 0.3;
-        double dU_y_max = 0.3;
-        double dU_x_min =-0.2;
+        double dU_y_max = 0.2;
+        double dU_x_min =-0.3;
         double dU_y_min =-0.2;
         double dT_max = 0.2;
         double dT_min =-0.2;
@@ -2288,12 +2316,12 @@ public:
         double kp = 9;
         double kd = 6; // critical damping
         
-        double theta_x_max   = 30*DEG2RAD; double theta_y_max   = 30*DEG2RAD;
-        double theta_x_min   =-30*DEG2RAD; double theta_y_min   =-30*DEG2RAD;        
-        double dtheta_x_max  = 500*DEG2RAD; double dtheta_y_max  = 500*DEG2RAD;
-        double dtheta_x_min  =-500*DEG2RAD; double dtheta_y_min  =-500*DEG2RAD;
-        double ddtheta_x_max = 1000*DEG2RAD; double ddtheta_y_max = 1000*DEG2RAD;
-        double ddtheta_x_min =-1000*DEG2RAD; double ddtheta_y_min =-1000*DEG2RAD;
+        double theta_x_max   = 0*DEG2RAD; double theta_y_max   = 0*DEG2RAD;
+        double theta_x_min   =-0*DEG2RAD; double theta_y_min   =-0*DEG2RAD;        
+        double dtheta_x_max  = 0*DEG2RAD; double dtheta_y_max  = 0*DEG2RAD;
+        double dtheta_x_min  =-0*DEG2RAD; double dtheta_y_min  =-0*DEG2RAD;
+        double ddtheta_x_max = 0*DEG2RAD; double ddtheta_y_max = 0*DEG2RAD;
+        double ddtheta_x_min =-0*DEG2RAD; double ddtheta_y_min =-0*DEG2RAD;
 
         std::string prefix_code = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_function/";   // The user should modify this variable your own directory.
         std::string prefix_lib  = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_lib/";
@@ -2301,6 +2329,21 @@ public:
         std::string lib_name    = "lib_NMPC_func.so";
     };
 
+    void getParameterYAML();
+    std::vector<double> w_wbik;
+    std::vector<double> kp_wbik;
+    
+    std::vector<double> kp_torque_zmp_ctrl;
+    std::vector<double> kv_torque_zmp_ctrl;
+    double ankle_angle_const_zmp_ctrl;
+    double kp_force_zmp_ctrl;
+    double kv_force_zmp_ctrl;
+    double foot_height_diff_const_zmp_ctrl;
+    
+    std::vector<double> w_nmpc;
+
+    Eigen::Vector3d final_swingfoot_pos;
+    
 private:    
     //////////////////////////////// Myeong-Ju
     unsigned int walking_tick_mj = 0;
