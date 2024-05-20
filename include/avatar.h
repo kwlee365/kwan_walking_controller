@@ -1981,6 +1981,7 @@ public:
     bool is_pelv_traj_init_ = true;
     bool is_bolt_controller_init = true;
     bool is_vert_foot_init = true;
+    bool is_dcm_plan_init = true;
     unsigned int num_contact_;
 
     // ZMP controller
@@ -2293,34 +2294,36 @@ public:
         double V_y_max = 10.0; double V_y_min = -10.0;
 
         double safety_factor = 0.8;
-        double p_c_x_max = safety_factor *( 1.0*0.18);
+        double p_c_x_max = safety_factor *( 0.5*Foot_length);
         double p_c_y_max = safety_factor *( 0.5*Foot_width);
-        double p_c_x_min = safety_factor *(-1.0*0.12);
+        double p_c_x_min = safety_factor *(-0.5*Foot_length);
         double p_c_y_min = safety_factor *(-0.5*Foot_width);
 
         double dU_x_max = 0.3;
-        double dU_y_max = 0.25 + 0.12;
+        double dU_y_max = 0.25 + 0.13;
         double dU_x_min =-0.3;
-        double dU_y_min = 0.25 - 0.02;
+        double dU_y_min = 0.25 - 0.03;
         double dT_max = 0.2;
         double dT_min =-0.2;
 
-        double kp = 9;
-        double kd = 6; // critical damping
+        double kp = 6;
+        double kd = 9; // critical damping
         
-        double theta_x_max   = 0*DEG2RAD; double theta_y_max   = 0*DEG2RAD;
-        double theta_x_min   =-0*DEG2RAD; double theta_y_min   =-0*DEG2RAD;        
-        double dtheta_x_max  = 0*DEG2RAD; double dtheta_y_max  = 0*DEG2RAD;
-        double dtheta_x_min  =-0*DEG2RAD; double dtheta_y_min  =-0*DEG2RAD;
+        double theta_x_max   = 0*DEG2RAD;   double theta_y_max = 0*DEG2RAD;
+        double theta_x_min   =-0*DEG2RAD;   double theta_y_min =-0*DEG2RAD;        
+        double dtheta_x_max  = 0*DEG2RAD;  double dtheta_y_max = 0*DEG2RAD;
+        double dtheta_x_min  =-0*DEG2RAD;  double dtheta_y_min =-0*DEG2RAD;
         double ddtheta_x_max = 0*DEG2RAD; double ddtheta_y_max = 0*DEG2RAD;
         double ddtheta_x_min =-0*DEG2RAD; double ddtheta_y_min =-0*DEG2RAD;
 
-        std::string prefix_code = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_function/";   // The user should modify this variable your own directory.
-        std::string prefix_lib  = "/home/kwan/catkin_ws/src/tocabi_avatar/nmpc_lib/";
-        std::string func_name   = "NMPC_func.c";
-        std::string lib_name    = "lib_NMPC_func.so";
+        std::string current_path = std::filesystem::current_path().parent_path().string();
+        std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/nmpc_function/";   // The user should modify this variable your own directory.
+        std::string prefix_lib   = current_path + "/catkin_ws/src/tocabi_avatar/nmpc_lib/";
+        std::string func_name    = "NMPC_func.c";
+        std::string lib_name     = "lib_NMPC_func.so";
     };
 
+    // YAML
     void getParameterYAML();
     std::vector<double> w_wbik;
     std::vector<double> kp_wbik;
@@ -2334,7 +2337,17 @@ public:
     
     std::vector<double> w_nmpc;
 
-    Eigen::Vector3d final_swingfoot_pos;
+    // Smooth trajectory generation and push-recovery based on Divergent Component of Motion
+    void getSmoothDcmTrajectory();
+    void onestepDcm(unsigned int current_step_number, unsigned int planning_step_number, double t_total_zmp, Eigen::VectorXd &temp_dcm_x, Eigen::VectorXd &temp_dcm_y, Eigen::VectorXd &temp_dcm_z);
+    double oneStepDcmSigmaFcn(const double &t, const double &T, const double &b);
+    double oneStepDcmAlphaFcn(const double &t, const double &T, const double &b);
+    double oneStepDcmBetaFcn(const double &t, const double &T, const double &b);
+    double oneStepDcmGammaFcn(const double &t, const double &T, const double &b);
+
+    Eigen::MatrixXd xi_ref_;
+    Eigen::Vector3d xi_desired_;
+    Eigen::Vector3d xi_init_;
     
 private:    
     //////////////////////////////// Myeong-Ju

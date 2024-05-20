@@ -1,0 +1,18 @@
+target_x : 1.0
+target_y : 0.0
+target_z : 0.0
+com_height : 0.73
+target_theta : 0.0
+step_length_x : 0.1
+step_length_y : 0.0
+is_right_foot_swing : 1
+
+t_rest_init : 0.15  
+t_rest_last : 0.15 
+t_double1 : 0.05 
+t_double2 : 0.05 
+t_total : 1.0 
+t_total_const : 1.0 
+
+foot_height : 0.055
+zmp_modif_time_margin : 0.1

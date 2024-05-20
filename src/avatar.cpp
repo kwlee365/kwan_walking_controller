@@ -22,6 +22,8 @@ ofstream KW_graph6("/home/kwan/data/tocabi/KW_graph6.txt"); // Stepping Controll
 // ofstream KW_graph_wbik("/home/kwan/data/tocabi/KW_graph_wbik.txt");
 ofstream KW_graph11("/home/kwan/data/tocabi/KW_graph11.txt");
 ofstream KW_graph12("/home/kwan/data/tocabi/KW_graph12.txt");
+ofstream KW_graph13("/home/kwan/data/tocabi/KW_graph13.txt");
+ofstream KW_graph14("/home/kwan/data/tocabi/KW_graph14.txt");
 
 AvatarController::AvatarController(RobotData &rd) : rd_(rd)
 {
@@ -804,6 +806,7 @@ void AvatarController::computeSlow()
             if (current_step_num_ < total_step_num_)
             {
                 getZmpTrajectory();
+                getSmoothDcmTrajectory();
                 // getComTrajectory();
                 getComTrajectory_mpc();
 
@@ -830,13 +833,13 @@ void AvatarController::computeSlow()
                             << del_F_.transpose() << " " 
                             << foot_z_desired.transpose() << std::endl;
     
-                KW_graph1_2 << com_trajectory_float_.transpose() << " " << com_float_current_.transpose() << " "
-                            << lfoot_trajectory_float_.translation().transpose() << " " 
-                            << rfoot_trajectory_float_.translation().transpose() << " " 
-                            << lfoot_float_current_.translation().transpose() << " " 
-                            << rfoot_float_current_.translation().transpose() << " "
-                            << lfoot_vel_trajectory_float_.transpose() << " "
-                            << rfoot_vel_trajectory_float_.transpose() << " " << std::endl;
+                // KW_graph1_2 << com_trajectory_float_.transpose() << " " << com_float_current_.transpose() << " "
+                //             << lfoot_trajectory_float_.translation().transpose() << " " 
+                //             << rfoot_trajectory_float_.translation().transpose() << " " 
+                //             << lfoot_float_current_.translation().transpose() << " " 
+                //             << rfoot_float_current_.translation().transpose() << " "
+                //             << lfoot_vel_trajectory_float_.transpose() << " "
+                //             << rfoot_vel_trajectory_float_.transpose() << " " << std::endl;
 
                 // computeIkControl_MJ(pelv_trajectory_float_, lfoot_trajectory_float_, rfoot_trajectory_float_, q_des_);
                 // Compliant_control(q_des_);
@@ -964,8 +967,8 @@ void AvatarController::computeSlow()
             desired_q_dot_fast_ = desired_q_dot_slow_;
             atb_desired_q_update_ = false;
         }
-        KW_graph_joint << desired_q_fast_.transpose() << " " << rd_.q_.transpose() << std::endl;
-        KW_graph_joint_vel << desired_q_dot_fast_.transpose() << " " << rd_.q_dot_.transpose() << std::endl;
+        // KW_graph_joint << desired_q_fast_.transpose() << " " << rd_.q_.transpose() << std::endl;
+        // KW_graph_joint_vel << desired_q_dot_fast_.transpose() << " " << rd_.q_dot_.transpose() << std::endl;
 
         // KW add
         torque_lower_.setZero();
@@ -15581,22 +15584,30 @@ void AvatarController::GravityCalculate_MJ()
 
 void AvatarController::parameterSetting()
 {
-    target_x_ = 0.0;
-    target_y_ = 0.0;
-    target_z_ = 0.0;
-    com_height_ = 0.73;
-    target_theta_ = 0.0;
-    step_length_x_ = 0.0;
-    step_length_y_ = 0.0;
-    is_right_foot_swing_ = 1;
+    // target_x_ = 0.0;
+    // target_y_ = 0.0;
+    // target_z_ = 0.0;
+    // com_height_ = 0.73;
+    // target_theta_ = 0.0;
+    // step_length_x_ = 0.0;
+    // step_length_y_ = 0.0;
+    // is_right_foot_swing_ = 1;
 
     // step stride : 0.1 m //
-    t_rest_init_ = 0.12 * hz_; // Slack, 0.9 step time
-    t_rest_last_ = 0.12 * hz_;
-    t_double1_ = 0.03 * hz_;
-    t_double2_ = 0.03 * hz_;
-    t_total_ = 0.9 * hz_;
-    t_total_const_ = 0.9 * hz_;
+    // t_rest_init_ = 0.12 * hz_; // Slack, 0.9 step time
+    // t_rest_last_ = 0.12 * hz_;
+    // t_double1_ = 0.03 * hz_;
+    // t_double2_ = 0.03 * hz_;
+    // t_total_ = 0.9 * hz_;
+    // t_total_const_ = 0.9 * hz_;
+
+    // step stride : 0.1 m //
+    // t_rest_init_ = 0.15 * hz_; // Slack, 0.9 step time
+    // t_rest_last_ = 0.15 * hz_;
+    // t_double1_ = 0.05 * hz_;
+    // t_double2_ = 0.05 * hz_;
+    // t_total_ = 1.0 * hz_;
+    // t_total_const_ = 1.0 * hz_;
 
     // t_rest_init_ = 0.2 * hz_; // slack
     // t_rest_last_ = 0.2 * hz_;
@@ -15619,10 +15630,10 @@ void AvatarController::parameterSetting()
     t_start_ssp_ = t_start_ + t_rest_init_ + t_double1_;
 
     current_step_num_ = 0;
-    foot_height_ = 0.055;      // 0.9 sec 0.05
+    // foot_height_ = 0.055;      // 0.9 sec 0.05
     pelv_height_offset_ = 0.0; // change pelvis height for manipulation when the robot stop walking
 
-    zmp_modif_time_margin_ = 0.1 * hz_;
+    // zmp_modif_time_margin_ = 0.1 * hz_;
 }
 
 void AvatarController::updateNextStepTime()
@@ -21087,8 +21098,6 @@ void AvatarController::getFootTrajectory_stepping()
         foot_y_desired.setZero();
         foot_z_desired.setZero();
 
-        final_swingfoot_pos.setZero();
-
         is_foot_traj_init_ = false;
     }
 
@@ -21733,7 +21742,7 @@ void AvatarController::dcmController_NMPC_KAIST()
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     KW_graph_nmpc_time << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
-    KW_graph_nmpc_error << v.segment(0, state_length * MPC_Horizon).transpose() << std::endl;
+    // KW_graph_nmpc_error << v.segment(0, state_length * MPC_Horizon).transpose() << std::endl;
 }
 
 void AvatarController::dcmController_NMPC_KAIST(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double ddtheta_x, double ddtheta_y)
@@ -22946,7 +22955,6 @@ void AvatarController::getVerticalFootTrajectory(double current_time, double sta
         else
         {
             std::cout << "Vertical Foot trajectory cannot be solved." << std::endl;
-            KW_graph12 << walking_tick_mj << std::endl;
         }
 
         Eigen::VectorXd pos_matrix; pos_matrix.setZero(order);
@@ -22973,6 +22981,261 @@ void AvatarController::getVerticalFootTrajectory(double current_time, double sta
         z_prev(2) = poly_coeff.transpose() * acc_matrix;
     }
 }
+
+void AvatarController::getSmoothDcmTrajectory()
+{
+    unsigned int planning_step_number = 3;
+    unsigned int preview_step_number = 0;
+    unsigned int norm_size = 0;
+
+    if (current_step_num_ >= total_step_num_ - planning_step_number)
+    {
+        norm_size = t_total_const_ * (total_step_num_ - current_step_num_) + 4.0 * hz_;
+        preview_step_number = total_step_num_ - current_step_num_;
+    }
+    else
+    {
+        norm_size = t_total_const_ * planning_step_number + 1.0 * hz_;
+        preview_step_number = planning_step_number;
+    }
+
+    if (current_step_num_ == 0)
+    {
+        norm_size = norm_size + t_temp_ + 1;
+    }
+
+    ///////////////////
+    // DCM Generator //
+    xi_ref_.setZero(norm_size, 3);
+    
+    Eigen::VectorXd temp_dcm_x; Eigen::VectorXd temp_dcm_y; Eigen::VectorXd temp_dcm_z;
+    unsigned int index = 0;
+
+    if (current_step_num_ == 0)
+    {
+        for (int i = 0; i <= t_temp_; i++)
+        {
+            if (i < 1.0 * hz_)
+            {
+                xi_ref_(i, 0) = com_support_init_(0);
+                xi_ref_(i, 1) = com_support_init_(1);
+                xi_ref_(i, 2) = com_support_init_(2);
+            }
+            else
+            {
+                xi_ref_(i, 0) = DyrosMath::cubic(i, t_temp_ - 1.0 * hz_, t_temp_, com_support_init_(0), xi_init_(0), 0.0, 0.0);
+                xi_ref_(i, 1) = DyrosMath::cubic(i, t_temp_ - 1.0 * hz_, t_temp_, com_support_init_(1), xi_init_(1), 0.0, 0.0);
+                xi_ref_(i, 2) = DyrosMath::cubic(i, t_temp_ - 1.0 * hz_, t_temp_, com_support_init_(2), xi_init_(2), 0.0, 0.0);
+            }
+
+            index++;
+        }
+    }
+    /////////////////////////////////////////////////////////////////////
+    if (current_step_num_ >= total_step_num_ - planning_step_number)
+    {
+        onestepDcm(current_step_num_, preview_step_number, t_total_const_, temp_dcm_x, temp_dcm_y, temp_dcm_z);
+
+        xi_ref_.block(index, 0, preview_step_number * t_total_const_, 1) = temp_dcm_x;
+        xi_ref_.block(index, 1, preview_step_number * t_total_const_, 1) = temp_dcm_y;
+        xi_ref_.block(index, 2, preview_step_number * t_total_const_, 1) = temp_dcm_z;
+
+        index = index + preview_step_number * t_total_const_;
+
+        xi_ref_.block(index, 0, int(4.0 * hz_), 1) = xi_ref_(index - 1, 0) * Eigen::VectorXd::Ones(int(4.0 * hz_));
+        xi_ref_.block(index, 1, int(4.0 * hz_), 1) = xi_ref_(index - 1, 1) * Eigen::VectorXd::Ones(int(4.0 * hz_));
+        xi_ref_.block(index, 2, int(4.0 * hz_), 1) = xi_ref_(index - 1, 2) * Eigen::VectorXd::Ones(int(4.0 * hz_));
+    }
+    else
+    {
+        onestepDcm(current_step_num_, preview_step_number, t_total_const_, temp_dcm_x, temp_dcm_y, temp_dcm_z);
+
+        xi_ref_.block(index, 0, preview_step_number * t_total_const_, 1) = temp_dcm_x;
+        xi_ref_.block(index, 1, preview_step_number * t_total_const_, 1) = temp_dcm_y;
+        xi_ref_.block(index, 2, preview_step_number * t_total_const_, 1) = temp_dcm_z;
+
+        index = index + preview_step_number * t_total_const_;
+
+        xi_ref_.block(index, 0, int(1.0 * hz_), 1) = xi_ref_(index - 1, 0) * Eigen::VectorXd::Ones(int(1.0 * hz_));
+        xi_ref_.block(index, 1, int(1.0 * hz_), 1) = xi_ref_(index - 1, 1) * Eigen::VectorXd::Ones(int(1.0 * hz_));
+        xi_ref_.block(index, 2, int(1.0 * hz_), 1) = xi_ref_(index - 1, 2) * Eigen::VectorXd::Ones(int(1.0 * hz_));
+    }
+
+    xi_desired_(0) = xi_ref_(walking_tick_mj + t_rest_init_ + t_double1_ - (bool)current_step_num_ * t_start_, 0);
+    xi_desired_(1) = xi_ref_(walking_tick_mj + t_rest_init_ + t_double1_ - (bool)current_step_num_ * t_start_, 1);
+    xi_desired_(2) = xi_ref_(walking_tick_mj + t_rest_init_ + t_double1_ - (bool)current_step_num_ * t_start_, 2);
+
+    if (walking_tick_mj % 200 == 0)
+    {
+        KW_graph11 << xi_ref_.block(0, 0, norm_size, 1).transpose() << std::endl;
+        KW_graph12 << xi_ref_.block(0, 1, norm_size, 1).transpose() << std::endl;
+        KW_graph13 << xi_ref_.block(0, 2, norm_size, 1).transpose() << std::endl;
+    }
+    KW_graph14 << xi_desired_.transpose() << std::endl;
+}
+
+void AvatarController::onestepDcm(unsigned int current_step_number, unsigned int planning_step_number, double t_total_zmp, Eigen::VectorXd &temp_dcm_x, Eigen::VectorXd &temp_dcm_y, Eigen::VectorXd &temp_dcm_z)
+{
+    unsigned int n_phi = 2 * planning_step_number + 1;
+    unsigned int n_wp  = n_phi + 1; 
+
+    temp_dcm_x.setZero(planning_step_number * t_total_zmp + t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_);
+    temp_dcm_y.setZero(planning_step_number * t_total_zmp + t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_);
+    temp_dcm_z.setZero(planning_step_number * t_total_zmp + t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_);
+
+    ////////////////////
+    // Block Matrices //
+    Eigen::MatrixXd A_ref_start;  A_ref_start.setZero(3 * n_phi, 3 * n_wp);
+    Eigen::MatrixXd A_ref_end;    A_ref_end.setZero(3 * n_phi, 3 * n_wp);
+    Eigen::MatrixXd A_gamma;      A_gamma.setZero(3 * n_phi, 3 * n_phi);
+    Eigen::MatrixXd A_alpha_beta; A_alpha_beta.setZero(3 * n_phi, 3 * n_wp);
+    Eigen::MatrixXd A_BWI;        A_BWI.setZero(3 * n_phi, 3 * n_phi);
+    Eigen::MatrixXd A_TC;         A_TC.setZero(3 * n_phi, 3 * n_wp);
+
+    for (int i = 0; i < n_phi; i++)
+    {
+        A_ref_start.block(3 * i, 3 * i, 3, 3).setIdentity();
+        A_ref_end.block(3 * i, 3 * i + 3, 3, 3).setIdentity();
+
+        if (i < n_phi - 1){
+            A_BWI.block(3 * i, 3 * i + 3, 3, 3).setIdentity();
+        }
+    
+        if(i % 2 == 0)  // DSP
+        {
+            A_gamma.block(3 * i, 3 * i, 3, 3)          = oneStepDcmGammaFcn(0.0, (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+            A_alpha_beta.block(3 * i, 3 * i, 3, 3)     = oneStepDcmAlphaFcn(0.0, (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+            A_alpha_beta.block(3 * i, 3 * i + 3, 3, 3) = oneStepDcmBetaFcn(0.0,  (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+        }
+        else if(i % 2 == 1)  // SSP
+        {
+            A_gamma.block(3 * i, 3 * i, 3, 3)          = oneStepDcmGammaFcn(0.0, (t_total_zmp - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_)) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+            A_alpha_beta.block(3 * i, 3 * i, 3, 3)     = oneStepDcmAlphaFcn(0.0, (t_total_zmp - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_)) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+            A_alpha_beta.block(3 * i, 3 * i + 3, 3, 3) = oneStepDcmBetaFcn(0.0,  (t_total_zmp - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_)) / hz_, 1.0/wn) * Eigen::Matrix3d::Identity();
+        }
+    }
+
+    A_TC.block(3 * n_phi - 3, 3 * n_wp - 3, 3, 3).setIdentity();
+
+    ///////////////////
+    // VRP Waypoints //
+    Eigen::VectorXd v_wp; v_wp.setZero(3 * n_wp);
+
+    // 1 step
+    if(current_step_number == 0)
+    {
+        v_wp.segment(0, 3) << 0.0, com_support_init_(1), com_height_;                   // DSP 2
+        v_wp.segment(3, 3) << 0.0, supportfoot_support_init_(1), com_height_;           // DSP 2 = SSP 1
+        v_wp.segment(6, 3) << 0.0, supportfoot_support_init_(1), com_height_;           // SSP 1 = SSP 2
+        v_wp.segment(9, 3) << foot_step_support_frame_(current_step_number, 0),         // SSP 2 = DSP 1 
+                              foot_step_support_frame_(current_step_number, 1), 
+                              com_height_;   
+    }
+    else if (current_step_number == 1)
+    {
+        v_wp.segment(0, 3) << supportfoot_support_init_(0),                     
+                              supportfoot_support_init_(1), 
+                              com_height_;           
+        v_wp.segment(3, 3) << foot_step_support_frame_(current_step_number - 1, 0),                                                        
+                              foot_step_support_frame_(current_step_number - 1, 1),
+                              com_height_;   
+        v_wp.segment(6, 3) << foot_step_support_frame_(current_step_number - 1, 0),                                                         
+                              foot_step_support_frame_(current_step_number - 1, 1),
+                              com_height_;   
+        v_wp.segment(9, 3) << foot_step_support_frame_(current_step_number, 0), 
+                              foot_step_support_frame_(current_step_number, 1), 
+                              com_height_;   
+    }
+    else
+    {
+        v_wp.segment(0, 3) << foot_step_support_frame_(current_step_number - 2, 0),                     
+                              foot_step_support_frame_(current_step_number - 2, 1), 
+                              com_height_;           
+        v_wp.segment(3, 3) << foot_step_support_frame_(current_step_number - 1, 0),                                                          
+                              foot_step_support_frame_(current_step_number - 1, 1),
+                              com_height_;   
+        v_wp.segment(6, 3) << foot_step_support_frame_(current_step_number - 1, 0),                                                         
+                              foot_step_support_frame_(current_step_number - 1, 1),
+                              com_height_;   
+        v_wp.segment(9, 3) << foot_step_support_frame_(current_step_number, 0), 
+                              foot_step_support_frame_(current_step_number, 1), 
+                              com_height_; 
+    }
+
+    for (unsigned int i = 0; i < planning_step_number - 1; i++){
+        v_wp.segment(9 + 6 * i + 3, 3) << foot_step_support_frame_(current_step_number + i, 0), 
+                                          foot_step_support_frame_(current_step_number + i, 1), 
+                                          com_height_; 
+        v_wp.segment(9 + 6 * i + 6, 3) << foot_step_support_frame_(current_step_number + i + 1, 0), 
+                                          foot_step_support_frame_(current_step_number + i + 1, 1), 
+                                          com_height_; 
+    }
+
+    ///////////////////
+    // DCM Reference //
+    Eigen::MatrixXd A_xi_ref_start; A_xi_ref_start.setZero(3 * n_phi, 3 * n_wp);
+    Eigen::MatrixXd A_xi_ref_end;   A_xi_ref_end.setZero(3 * n_phi, 3 * n_wp);
+    Eigen::MatrixXd A_xi_ref;       A_xi_ref.setZero(3, 3 * n_wp);
+
+    Eigen::VectorXd xi_ref_start;   xi_ref_start.setZero(3 * n_wp);
+    Eigen::VectorXd xi_ref_end;     xi_ref_end.setZero(3 * n_wp);
+
+    A_xi_ref_start = (Eigen::MatrixXd::Identity(3 * n_phi, 3 * n_phi) - A_gamma * A_BWI).inverse() * (A_alpha_beta + A_gamma * A_TC);
+    A_xi_ref_end   = (Eigen::MatrixXd::Identity(3 * n_phi, 3 * n_phi) - A_BWI * A_gamma).inverse() * (A_TC + A_BWI * A_alpha_beta);
+
+    xi_ref_start = A_xi_ref_start * v_wp;
+    xi_ref_end   = A_xi_ref_end   * v_wp;
+
+    unsigned int preview_tick = 0;
+    for (unsigned int transition_phase = 0; transition_phase < n_phi; transition_phase++)
+    {
+        if (transition_phase % 2 == 1)    // SSP
+        {
+            for (unsigned int t = 0; t < t_total_zmp - (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_); t++)
+            {
+                A_xi_ref = oneStepDcmAlphaFcn(t / hz_, (t_total_zmp - (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_)) / hz_, 1.0/wn) * A_ref_start.block(3  * transition_phase, 0, 3, 3 * n_wp) + 
+                            oneStepDcmBetaFcn(t / hz_, (t_total_zmp - (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_)) / hz_, 1.0/wn) * A_ref_end.block(3    * transition_phase, 0, 3, 3 * n_wp) + 
+                           oneStepDcmGammaFcn(t / hz_, (t_total_zmp - (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_)) / hz_, 1.0/wn) * A_xi_ref_end.block(3 * transition_phase, 0, 3, 3 * n_wp);
+                        
+                temp_dcm_x(preview_tick) = (A_xi_ref * v_wp)(0);
+                temp_dcm_y(preview_tick) = (A_xi_ref * v_wp)(1);
+                temp_dcm_z(preview_tick) = (A_xi_ref * v_wp)(2);
+                preview_tick++;
+            }
+        }
+        else if (transition_phase % 2 == 0)    // DSP
+        {
+            for (unsigned int t = 0; t <  t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_; t++)
+            {
+                A_xi_ref = oneStepDcmAlphaFcn(t / hz_, (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * A_ref_start.block(3  * transition_phase, 0, 3, 3 * n_wp) + 
+                            oneStepDcmBetaFcn(t / hz_, (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * A_ref_end.block(3    * transition_phase, 0, 3, 3 * n_wp) + 
+                           oneStepDcmGammaFcn(t / hz_, (t_rest_init_ + t_double1_ + t_rest_last_ + t_double2_) / hz_, 1.0/wn) * A_xi_ref_end.block(3 * transition_phase, 0, 3, 3 * n_wp);
+                        
+                temp_dcm_x(preview_tick) = (A_xi_ref * v_wp)(0);
+                temp_dcm_y(preview_tick) = (A_xi_ref * v_wp)(1);
+                temp_dcm_z(preview_tick) = (A_xi_ref * v_wp)(2);
+                preview_tick++;
+            }
+        }
+    }
+}
+
+double AvatarController::oneStepDcmSigmaFcn(const double &t, const double &T, const double &b){
+    return ((t + b) / T);
+}
+
+double AvatarController::oneStepDcmAlphaFcn(const double &t, const double &T, const double &b){
+    return (1.0 - oneStepDcmSigmaFcn(t, T, b) - oneStepDcmGammaFcn(t, T, b) * (1 - oneStepDcmSigmaFcn(T, T, b)));
+}
+
+double AvatarController::oneStepDcmBetaFcn(const double &t, const double &T, const double &b){
+    return (oneStepDcmSigmaFcn(t, T, b) - oneStepDcmGammaFcn(t, T, b) * oneStepDcmSigmaFcn(T, T, b));
+}
+
+double AvatarController::oneStepDcmGammaFcn(const double &t, const double &T, const double &b){
+    return (exp((t - T) / b));
+}
+
 // etc...
 double AvatarController::LPF(double x, double x_LPF)
 {
@@ -22993,6 +23256,44 @@ void AvatarController::getParameterYAML()
     // add "<rosparam command="load" file="$(find tocabi_avatar)/setting/setting_simulation_gain.yaml" ns="/tocabi_controller"/>"
     // in the "tocabi_controller/launch/simulation.launch" or "tocabi_controller/launch/realrobot.launch" 
     std::cout << std::endl;
+
+    // ParameterSetting
+    ros::param::get("/tocabi_controller/target_x", target_x_);
+    ros::param::get("/tocabi_controller/target_y", target_y_);
+    ros::param::get("/tocabi_controller/target_z", target_z_);
+    ros::param::get("/tocabi_controller/com_height", com_height_);
+    ros::param::get("/tocabi_controller/target_theta", target_theta_);
+    ros::param::get("/tocabi_controller/step_length_x", step_length_x_);
+    ros::param::get("/tocabi_controller/step_length_y", step_length_y_);
+    ros::param::get("/tocabi_controller/is_right_foot_swing", is_right_foot_swing_);
+
+    std::cout << "target_x_: "            << target_x_ << std::endl;
+    std::cout << "target_y_: "            << target_y_ << std::endl;
+    std::cout << "target_z_: "            << target_z_ << std::endl;
+    std::cout << "com_height_: "          << com_height_ << std::endl;
+    std::cout << "target_theta_: "        << target_theta_ << std::endl;
+    std::cout << "step_length_x_: "       << step_length_x_ << std::endl;
+    std::cout << "step_length_y_: "       << step_length_y_ << std::endl;
+    std::cout << "is_right_foot_swing_: " << is_right_foot_swing_ << std::endl;
+
+    ros::param::get("/tocabi_controller/t_rest_init", t_rest_init_);     t_rest_init_   = t_rest_init_ * hz_;
+    ros::param::get("/tocabi_controller/t_rest_last", t_rest_last_);     t_rest_last_   = t_rest_last_ * hz_;
+    ros::param::get("/tocabi_controller/t_double1", t_double1_);         t_double1_     = t_double1_ * hz_;
+    ros::param::get("/tocabi_controller/t_double2", t_double2_);         t_double2_     = t_double2_ * hz_;
+    ros::param::get("/tocabi_controller/t_total", t_total_);             t_total_       = t_total_ * hz_;
+    ros::param::get("/tocabi_controller/t_total_const", t_total_const_); t_total_const_ = t_total_const_ * hz_;
+
+    ros::param::get("/tocabi_controller/foot_height", foot_height_);
+    ros::param::get("/tocabi_controller/zmp_modif_time_margin", zmp_modif_time_margin_); zmp_modif_time_margin_ = zmp_modif_time_margin_ * hz_;
+
+    std::cout << "t_rest_init_: "           << t_rest_init_ << std::endl;
+    std::cout << "t_rest_last_: "           << t_rest_last_ << std::endl;
+    std::cout << "t_double1_: "             << t_double1_ << std::endl;
+    std::cout << "t_double2_: "             << t_double2_ << std::endl;
+    std::cout << "t_total_: "               << t_total_ << std::endl;
+    std::cout << "t_total_const_: "         << t_total_const_ << std::endl;
+    std::cout << "foot_height_: "           << foot_height_ << std::endl;
+    std::cout << "zmp_modif_time_margin_: " << zmp_modif_time_margin_ << std::endl;
 
     // WBIK
     ros::param::get("/tocabi_controller/w_wbik", w_wbik);

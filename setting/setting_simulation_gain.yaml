@@ -54,7 +54,7 @@ w_nmpc : [100.0,       # time
           1.0,         # w_p_c_x
           0.01,        # w_dU_x
           1000.0,     # w_db_x
-          0.01,         # w_ddtheta_y
+          0.1,         # w_ddtheta_y
           
           1.0,         # w_xi_err_y
           1.0,         # w_p_c_y
