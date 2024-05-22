@@ -1982,6 +1982,8 @@ public:
     bool is_bolt_controller_init = true;
     bool is_vert_foot_init = true;
     bool is_dcm_plan_init = true;
+
+    bool is_sudden_stop = false;
     unsigned int num_contact_;
 
     // ZMP controller
@@ -2191,7 +2193,8 @@ public:
     void dcmController_NMPC_KAIST();
     void dcmController_NMPC_KAIST(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
     void getGradHessDcm_NMPC(Eigen::VectorXd &v, int state_length, int input_length, int total_num_constraint, double dt_MPC, int MPC_horizon, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
-    void dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double stepping_current_time, double ssp_ref_time, double dsp_ref_time, double w, double H, double dt_MPC, Eigen::VectorXd x_com_pos_MPC, Eigen::VectorXd x_com_vel_MPC, Eigen::VectorXd y_com_pos_MPC, Eigen::VectorXd y_com_vel_MPC);    CQuadraticProgram SQP_NMPC_DCM_;
+    void dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double stepping_current_time, double ssp_ref_time, double dsp_ref_time, double w, double H, double dt_MPC, Eigen::VectorXd x_com_pos_MPC, Eigen::VectorXd x_com_vel_MPC, Eigen::VectorXd y_com_pos_MPC, Eigen::VectorXd y_com_vel_MPC);    
+    CQuadraticProgram SQP_NMPC_DCM_;
     bool is_dcm_nmpc_init = true;
     bool is_nmpc_func_generation_init = true;
     void CasADiFunctionGeneration();
@@ -2303,8 +2306,8 @@ public:
         double dU_y_max = 0.25 + 0.13;
         double dU_x_min =-0.3;
         double dU_y_min = 0.25 - 0.03;
-        double dT_max = 0.2;
-        double dT_min =-0.2;
+        double dT_max = 0.0;
+        double dT_min =-0.4;
 
         double kp = 6;
         double kd = 9; // critical damping
@@ -2337,17 +2340,57 @@ public:
     
     std::vector<double> w_nmpc;
 
-    // Smooth trajectory generation and push-recovery based on Divergent Component of Motion
-    void getSmoothDcmTrajectory();
-    void onestepDcm(unsigned int current_step_number, unsigned int planning_step_number, double t_total_zmp, Eigen::VectorXd &temp_dcm_x, Eigen::VectorXd &temp_dcm_y, Eigen::VectorXd &temp_dcm_z);
-    double oneStepDcmSigmaFcn(const double &t, const double &T, const double &b);
-    double oneStepDcmAlphaFcn(const double &t, const double &T, const double &b);
-    double oneStepDcmBetaFcn(const double &t, const double &T, const double &b);
-    double oneStepDcmGammaFcn(const double &t, const double &T, const double &b);
-
     Eigen::MatrixXd xi_ref_;
     Eigen::Vector3d xi_desired_;
     Eigen::Vector3d xi_init_;
+
+    // Contact Schedule Optimization (2024-05-20)
+    struct DyrosContactScheduler{
+        // PARAM //
+        const int planning_step_number = 2;
+        const int n_phi = 2 * planning_step_number + 1;
+        const int n_wp = n_phi + 1;
+
+        const int state_length = 2;
+        const int input_length = 9;
+        const int total_num_constraint = 11;
+
+        // Robot (TOCABI) //
+        double Foot_length = 0.3;
+        double Foot_width  = 0.16;
+
+        double hip_torque_max = 20;
+        double hip_torque_min =-20;
+
+        double V_x_max = 10.0; double V_x_min = -10.0;
+        double V_y_max = 10.0; double V_y_min = -10.0;
+
+        double safety_factor = 0.8;
+        double p_c_x_max = safety_factor *( 0.5*Foot_length);
+        double p_c_y_max = safety_factor *( 0.5*Foot_width);
+        double p_c_x_min = safety_factor *(-0.5*Foot_length);
+        double p_c_y_min = safety_factor *(-0.5*Foot_width);
+
+        double dU_x_max = 0.3;
+        double dU_y_max = 0.25 + 0.13;
+        double dU_x_min =-0.3;
+        double dU_y_min = 0.25 - 0.03;
+        double dT_max = 0.0;
+        double dT_min =-0.2;
+
+        
+        std::string current_path = std::filesystem::current_path().parent_path().string();
+        std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/function/";   // The user should modify this variable your own directory.
+        std::string prefix_lib   = current_path + "/catkin_ws/src/tocabi_avatar/lib/";
+        std::string func_name    = "nmpc_func.c";
+        std::string lib_name     = "lib_nmpc_func.so";
+    };
+    void dcmController_NMPC_DYROS();
+    void dcmController_NMPC_DYROS(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
+    void refernceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, double b);    
+    
+    bool nmpc_update_ {false};
+    std::atomic<bool> atb_nmpc_update_{false};
     
 private:    
     //////////////////////////////// Myeong-Ju

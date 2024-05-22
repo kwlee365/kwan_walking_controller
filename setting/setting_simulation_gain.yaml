@@ -1,5 +1,5 @@
 # WBIK
-w_wbik : [1000.0,       # Foot 
+w_wbik : [1000.0,      # Foot 
           1.0,         # CoM
           0.01,        # CAM
           0.0005,      # Initial Pose Return
