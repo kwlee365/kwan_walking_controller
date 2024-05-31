@@ -1361,7 +1361,11 @@ public:
     Eigen::Vector6d fixed_swing_foot_del_F_;
     Eigen::MatrixXd modified_del_zmp_; 
     Eigen::MatrixXd m_del_zmp_x;
+    Eigen::MatrixXd m_del_zmp_x_thread;
+    Eigen::MatrixXd m_del_zmp_x_mpc;
     Eigen::MatrixXd m_del_zmp_y;
+    Eigen::MatrixXd m_del_zmp_y_thread;
+    Eigen::MatrixXd m_del_zmp_y_mpc;
     int first_current_step_flag_ = 0;
     int first_current_step_number_ = 0;
     
@@ -1723,6 +1727,8 @@ public:
     Eigen::Vector3d com_desired_;
     Eigen::MatrixXd foot_step_;
     Eigen::MatrixXd foot_step_support_frame_;
+    Eigen::MatrixXd foot_step_support_frame_thread;
+    Eigen::MatrixXd foot_step_support_frame_mpc;
     Eigen::MatrixXd foot_step_support_frame_offset_;
     
     // Com damping control - ZMP tracking controller
@@ -2194,15 +2200,14 @@ public:
     void dcmController_NMPC_KAIST(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
     void getGradHessDcm_NMPC(Eigen::VectorXd &v, int state_length, int input_length, int total_num_constraint, double dt_MPC, int MPC_horizon, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
     void dcmRefWindow(Eigen::MatrixXd &xi_ref_horizon, double stepping_current_time, double ssp_ref_time, double dsp_ref_time, double w, double H, double dt_MPC, Eigen::VectorXd x_com_pos_MPC, Eigen::VectorXd x_com_vel_MPC, Eigen::VectorXd y_com_pos_MPC, Eigen::VectorXd y_com_vel_MPC);    
-    CQuadraticProgram SQP_NMPC_DCM_;
     bool is_dcm_nmpc_init = true;
     bool is_nmpc_func_generation_init = true;
     void CasADiFunctionGeneration();
     void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA);
-    void EigenMatrixToCasadiDM(casadi::DM &casadi_dm, Eigen::MatrixXd eigen_matrix, int col, int row);
-    void EigenVectorToCasadiDM(casadi::DM &casadi_dm, Eigen::VectorXd eigen_vector, int length);
-    Eigen::MatrixXd CasadiDMVectorToEigenMatrix(std::vector<casadi::DM> casadi_dm_vector);
-    Eigen::VectorXd CasadiDMVectorToEigenVector(std::vector<casadi::DM> casadi_dm_vector);
+    void EigenMatrixToCasadiDM(casadi::DM &casadi_dm, const Eigen::MatrixXd &eigen_matrix, int col, int row);
+    void EigenVectorToCasadiDM(casadi::DM &casadi_dm, const Eigen::VectorXd &eigen_vector, int length);
+    Eigen::MatrixXd CasadiDMVectorToEigenMatrix(const std::vector<casadi::DM> &casadi_dm_vector);
+    Eigen::VectorXd CasadiDMVectorToEigenVector(const std::vector<casadi::DM> &casadi_dm_vector);
     void ddthetaMinMax(double theta_x_prev, double dtheta_x_prev, double theta_y_prev, double dtheta_y_prev, double &ddtheta_x_min, double &ddtheta_x_max, double &ddtheta_y_min, double &ddtheta_y_max);
     void getVerticalFootTrajectory(double current_time, double start_time, double total_time, double z_init, double z_des, double z_end, Eigen::Vector3d &z_prev, double z_max, double hz);
     void getHorizontalFootTrajectory(double current_time, double start_time, double total_time, double x_init, double x_des, double x_end, Eigen::Vector3d &x_prev, double hz);
@@ -2343,29 +2348,29 @@ public:
     Eigen::MatrixXd xi_ref_;
     Eigen::Vector3d xi_desired_;
     Eigen::Vector3d xi_init_;
-
+    Eigen::VectorXd v_nmpc_;
     // Contact Schedule Optimization (2024-05-20)
     struct DyrosContactScheduler{
         // PARAM //
+
         const int planning_step_number = 2;
         const int n_phi = 2 * planning_step_number + 1;
         const int n_wp = n_phi + 1;
 
         const int state_length = 2;
         const int input_length = 9;
-        const int total_num_constraint = 11;
+        const int total_num_constraint = 15 * n_phi;
+
+        const int nmpc_ctrl_input_thread_num = 5;
 
         // Robot (TOCABI) //
         double Foot_length = 0.3;
         double Foot_width  = 0.16;
 
-        double hip_torque_max = 20;
-        double hip_torque_min =-20;
-
         double V_x_max = 10.0; double V_x_min = -10.0;
         double V_y_max = 10.0; double V_y_min = -10.0;
 
-        double safety_factor = 0.8;
+        double safety_factor = 0.5;
         double p_c_x_max = safety_factor *( 0.5*Foot_length);
         double p_c_y_max = safety_factor *( 0.5*Foot_width);
         double p_c_x_min = safety_factor *(-0.5*Foot_length);
@@ -2376,8 +2381,7 @@ public:
         double dU_x_min =-0.3;
         double dU_y_min = 0.25 - 0.03;
         double dT_max = 0.0;
-        double dT_min =-0.2;
-
+        double dT_min =-0.1;
         
         std::string current_path = std::filesystem::current_path().parent_path().string();
         std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/function/";   // The user should modify this variable your own directory.
@@ -2385,12 +2389,18 @@ public:
         std::string func_name    = "nmpc_func.c";
         std::string lib_name     = "lib_nmpc_func.so";
     };
+
+    CQuadraticProgram SQP_NMPC_DCM_;
     void dcmController_NMPC_DYROS();
     void dcmController_NMPC_DYROS(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
-    void refernceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, double b);    
-    
+    void referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, Eigen::VectorXd &big_M, const double &transition_phase_current_time);
+    void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time);
+
     bool nmpc_update_ {false};
     std::atomic<bool> atb_nmpc_update_{false};
+
+    Eigen::VectorXd zx_ref;
+    Eigen::VectorXd zy_ref;
     
 private:    
     //////////////////////////////// Myeong-Ju

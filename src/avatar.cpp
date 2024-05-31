@@ -8,22 +8,27 @@ ofstream KW_graph1_2("/home/kwan/data/tocabi/KW_graph1-2.txt"); // ZMP, COM, CP,
 ofstream KW_graph2("/home/kwan/data/tocabi/KW_graph2.txt"); // ZMP Controller
 ofstream KW_graph_nmpc_time("/home/kwan/data/tocabi/KW_graph_nmpc_time.txt");  // CP-NMPC Solving time
 ofstream KW_graph_nmpc_error("/home/kwan/data/tocabi/KW_graph_nmpc_error.txt"); // CP-NMPC CP error
-// ofstream KW_graph5_1("/home/kwan/data/tocabi/KW_graph5-1.txt"); // COM x Wieber MPC
-// ofstream KW_graph5_2("/home/kwan/data/tocabi/KW_graph5-2.txt"); // COM y Wieber MPC
-// ofstream KW_graph5_3("/home/kwan/data/tocabi/KW_graph5-3.txt"); // ZMP x Wieber MPC
-// ofstream KW_graph5_4("/home/kwan/data/tocabi/KW_graph5-4.txt"); // ZMP y Wieber MPC
-// ofstream KW_graph5_5("/home/kwan/data/tocabi/KW_graph5-5.txt"); // Ref ZMP y Wieber MPC
-// ofstream KW_graph5_6("/home/kwan/data/tocabi/KW_graph5-6.txt"); // Ref ZMP y Wieber MPC
+ofstream KW_graph5_1("/home/kwan/data/tocabi/KW_graph5-1.txt"); // COM x Wieber MPC
+ofstream KW_graph5_2("/home/kwan/data/tocabi/KW_graph5-2.txt"); // COM y Wieber MPC
+ofstream KW_graph5_3("/home/kwan/data/tocabi/KW_graph5-3.txt"); // ZMP x Wieber MPC
+ofstream KW_graph5_4("/home/kwan/data/tocabi/KW_graph5-4.txt"); // ZMP y Wieber MPC
+ofstream KW_graph5_5("/home/kwan/data/tocabi/KW_graph5-5.txt"); // Ref ZMP y Wieber MPC
+ofstream KW_graph5_6("/home/kwan/data/tocabi/KW_graph5-6.txt"); // Ref ZMP y Wieber MPC
 ofstream KW_graph6("/home/kwan/data/tocabi/KW_graph6.txt"); // Stepping Controller
-// ofstream KW_graph7("/home/kwan/data/tocabi/KW_graph7.txt"); // DCM Reference X dir in the CP-NMPC
-// ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt"); // DCM Reference Y dir in the CP-NMPC
-// ofstream KW_graph9("/home/kwan/data/tocabi/KW_graph9.txt"); // DCM Reference X dir in the COM Generator
-// ofstream KW_graph10("/home/kwan/data/tocabi/KW_graph10.txt");   // DCM Reference Y dir in the COM Generator
-// ofstream KW_graph_wbik("/home/kwan/data/tocabi/KW_graph_wbik.txt");
-ofstream KW_graph11("/home/kwan/data/tocabi/KW_graph11.txt");
-ofstream KW_graph12("/home/kwan/data/tocabi/KW_graph12.txt");
-ofstream KW_graph13("/home/kwan/data/tocabi/KW_graph13.txt");
-ofstream KW_graph14("/home/kwan/data/tocabi/KW_graph14.txt");
+ofstream KW_graph7_1("/home/kwan/data/tocabi/KW_graph7-1.txt"); // DCM init ref X dir in the NMPC
+ofstream KW_graph7_2("/home/kwan/data/tocabi/KW_graph7-2.txt"); // DCM init ref Y dir in the NMPC
+ofstream KW_graph7_3("/home/kwan/data/tocabi/KW_graph7-3.txt"); // VRP init ref X dir in the NMPC
+ofstream KW_graph7_4("/home/kwan/data/tocabi/KW_graph7-4.txt"); // VRP init ref Y dir in the NMPC
+ofstream KW_graph7_5("/home/kwan/data/tocabi/KW_graph7-5.txt"); // VRP end ref X dir in the NMPC
+ofstream KW_graph7_6("/home/kwan/data/tocabi/KW_graph7-6.txt"); // VRP end ref Y dir in the NMPC
+ofstream KW_graph7_7("/home/kwan/data/tocabi/KW_graph7-7.txt"); // Time ref in the NMPC
+ofstream KW_graph7_8("/home/kwan/data/tocabi/KW_graph7-8.txt"); // CTRL Input in the NMPC
+ofstream KW_graph7_9("/home/kwan/data/tocabi/KW_graph7-9.txt"); // CTRL Input in the NMPC
+ofstream KW_graph8("/home/kwan/data/tocabi/KW_graph8.txt"); // Time data
+ofstream KW_graph9("/home/kwan/data/tocabi/KW_graph9.txt"); // Big M data
+ofstream KW_graph10("/home/kwan/data/tocabi/KW_graph10.txt"); // GetGradHess
+ofstream KW_graph11("/home/kwan/data/tocabi/KW_graph11.txt"); // GetGradHess
+ofstream KW_graph12("/home/kwan/data/tocabi/KW_graph12.txt"); // GetGradHess
 
 AvatarController::AvatarController(RobotData &rd) : rd_(rd)
 {
@@ -700,8 +705,6 @@ void AvatarController::computeSlow()
                 Initial_ref_q_(i) = ref_q_(i);
             }
 
-            // Saving for initial upper body pose
-            // edited by MJ (Initial upper body trajectory generation for CAM control /220110)
             CAM_upper_init_q_.setZero();
             Initial_ref_upper_q_.setZero();
             for (int i = 12; i < MODEL_DOF; i++)
@@ -713,13 +716,13 @@ void AvatarController::computeSlow()
             CAM_upper_init_q_(16) = +10.0 * DEG2RAD; // Left Shoulder Pitch joint // 17 deg
             CAM_upper_init_q_(17) = +65.0 * DEG2RAD; // Left Shoulder Roll joint // 86 deg
             CAM_upper_init_q_(18) = -70.0 * DEG2RAD; // Left Elbow Yaw joint // -72 deg
-            CAM_upper_init_q_(19) = - 65.0 * DEG2RAD; // Left Elbow Pitch joint // -57 deg
+            CAM_upper_init_q_(19) = -65.0 * DEG2RAD; // Left Elbow Pitch joint // -57 deg
 
             CAM_upper_init_q_(25) = -15.0 * DEG2RAD; // Right Shoulder Yaw joint // -17 deg
             CAM_upper_init_q_(26) = -10.0 * DEG2RAD; // Right Shoulder Pitch joint
             CAM_upper_init_q_(27) = -65.0 * DEG2RAD; // Right Shoulder Roll joint
             CAM_upper_init_q_(28) = +70.0 * DEG2RAD; // Right Elbow Yaw joint
-            CAM_upper_init_q_(29) = + 65.0 * DEG2RAD; // Right Elbow Pich joint
+            CAM_upper_init_q_(29) = +65.0 * DEG2RAD; // Right Elbow Pich joint
 
             q_prev_MJ_ = rd_.q_;
             walking_tick_mj = 0;
@@ -743,7 +746,6 @@ void AvatarController::computeSlow()
             atb_grav_update_ = false;
         }
 
-        // edited by MJ (Initial upper body trajectory generation for CAM control /220110)
         if (initial_tick_mj <= 2.0 * hz_)
         {
             ref_q_(15) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(15), CAM_upper_init_q_(15), 0.0, 0.0); // Left Shoulder Yaw joint
@@ -810,10 +812,9 @@ void AvatarController::computeSlow()
 
                 CentroidalMomentCalculator();
 
-                // dcmController_NMPC_KAIST(del_zmp_x_dcm_nmpc, del_zmp_y_dcm_nmpc, del_footstep_x_dcm_nmpc, del_footstep_y_dcm_nmpc, del_steptime_dcm_nmpc, ddtheta_x_dcm_nmpc, ddtheta_y_dcm_nmpc);
+                dcmController_NMPC_DYROS(del_zmp_x_dcm_nmpc, del_zmp_y_dcm_nmpc, del_footstep_x_dcm_nmpc, del_footstep_y_dcm_nmpc, del_steptime_dcm_nmpc, ddtheta_x_dcm_nmpc, ddtheta_y_dcm_nmpc);
 
-                getFootTrajectory();
-                // getFootTrajectory_stepping();
+                getFootTrajectory_stepping();
                 getPelvTrajectory();
                 supportToFloatPattern();
 
@@ -1342,9 +1343,8 @@ void AvatarController::computeFast()
         walkingStateManager(); // avatar
         getProcessedRobotData();
 
-        // motion planing and control//
+        // motion planing and control //
         motionGenerator();
-        // STEP3: Compute q_dot for CAM control
         CamComJacobianWBIK();
 
         for (int i = 0; i < MODEL_DOF; i++)
@@ -1361,18 +1361,6 @@ void AvatarController::computeFast()
             desired_q_dot_slow_ = desired_q_dot_;
             atb_desired_q_update_ = false;
         }
-
-        // if (atb_desired_q_update_ == false)
-        // {
-        //     atb_desired_q_update_ = true;
-        //     torque_upper_.setZero();
-        //     for (int i = 12; i < MODEL_DOF; i++)
-        //     {
-        //         torque_upper_(i) = (kp_joint_(i) * (desired_q_(i) - current_q_(i)) + kv_joint_(i) * (desired_q_dot_(i) - current_q_dot_(i)) + 1.0 * Gravity_MJ_(i));
-        //         torque_upper_(i) = torque_upper_(i) * pd_control_mask_(i); // masking for joint pd control
-        //     }
-        //     atb_desired_q_update_ = false;
-        // }
 
         savePreData();
 
@@ -9840,17 +9828,8 @@ void AvatarController::BoltController_MJ()
 
 void AvatarController::computeThread3()
 {
-    // comGenerator_MPC_Z_e(50.0, 1.0/50.0, 2.5, 2000/50.0);
-    // comGenerator_MPC_wieber(50.0, 1.0/50.0, 2.5, 2000/50.0); // Hz, T, Preview window
-    // cpcontroller_MPC_MJDG(50.0, 1.5); // Hz, Preview window
-    // new_cpcontroller_MPC_MJDG(50.0, 1.5);
-
-    // KW add
-    comGenerator_MPC_wieber(50.0, 1.0/50.0, 2.5, 2000/50.0);
-
+    comGenerator_MPC_wieber(50.0, 1.0/50.0, 3.0, 2000/50.0);
     dcmController_NMPC_DYROS();
-
-    // cpcontroller_MPC_LIPM(50.0, 1.5);
 }
 
 // void AvatarController::comGenerator_MPC_wieber(double MPC_freq, double T, double preview_window, int MPC_synchro_hz_)
@@ -13141,7 +13120,7 @@ void AvatarController::addZmpOffset()
 
 void AvatarController::getZmpTrajectory()
 {
-    unsigned int planning_step_number = 3;
+    unsigned int planning_step_number = 5;
     unsigned int norm_size = 0;
 
     if (current_step_num_ >= total_step_num_ - planning_step_number)
@@ -13151,7 +13130,10 @@ void AvatarController::getZmpTrajectory()
     else
     {
         norm_size = t_total_const_ * planning_step_number + 1.0 * hz_;
+        // norm_size = (t_last_ - t_start_ + 1) * (planning_step_number) + 1.0 * hz_;
     }
+    // t_total_ * planning step_num인데 t_total_이 현재스텝에서 0.7이면 norm size가 3.5s가 되어서 0.7 + 0.9 *(planning_step_num -1) size보다 작아서 터졌었음.
+    //    cout << total_step_num_ << "," << planning_step_number << "," << current_step_num_ << endl;
     if (current_step_num_ == 0)
     {
         norm_size = norm_size + t_temp_ + 1;
@@ -13159,6 +13141,17 @@ void AvatarController::getZmpTrajectory()
 
     addZmpOffset();
     zmpGenerator(norm_size, planning_step_number);
+
+    // static int aa = 0;
+    // if(walking_tick_mj >= 4.3*2000 && aa == 0)
+    // {
+    //     aa = 1;
+
+    //     for(int i = 0; i < 5000; i ++)
+    //     {
+    //         MJ_graph << ref_zmp_mj_wo_offset_(i, 1) << endl;
+    //     }
+    // }
 
     zmp_desired_(0) = ref_zmp_mj_(walking_tick_mj - (bool)current_step_num_ * t_start_, 0);
     zmp_desired_(1) = ref_zmp_mj_(walking_tick_mj - (bool)current_step_num_ * t_start_, 1);
@@ -13170,6 +13163,8 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
 {
     ref_zmp_mj_.resize(norm_size, 2);
     ref_zmp_mj_.setZero();
+    ref_zmp_mj_wo_offset_.resize(norm_size, 2);
+    ref_zmp_mj_wo_offset_.setZero();
 
     Eigen::VectorXd temp_px;
     Eigen::VectorXd temp_py;
@@ -13186,17 +13181,26 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
             {
                 ref_zmp_mj_(i, 0) = com_support_init_(0);
                 ref_zmp_mj_(i, 1) = com_support_init_(1);
+
+                ref_zmp_mj_wo_offset_(i, 0) = com_support_init_(0);
+                ref_zmp_mj_wo_offset_(i, 1) = com_support_init_(1);
             }
             else if (i < 2.0 * hz_)
             {
                 double del_x = i - 1.0 * hz_;
                 ref_zmp_mj_(i, 0) = com_support_init_(0) - del_x * com_support_init_(0) / (1.0 * hz_);
                 ref_zmp_mj_(i, 1) = com_support_init_(1);
+
+                ref_zmp_mj_wo_offset_(i, 0) = com_support_init_(0) - del_x * com_support_init_(0) / (1.0 * hz_);
+                ref_zmp_mj_wo_offset_(i, 1) = com_support_init_(1);
             }
             else
             {
                 ref_zmp_mj_(i, 0) = 0.0;
                 ref_zmp_mj_(i, 1) = com_support_init_(1);
+
+                ref_zmp_mj_wo_offset_(i, 0) = 0.0;
+                ref_zmp_mj_wo_offset_(i, 1) = com_support_init_(1);
             }
             index++;
         }
@@ -13232,14 +13236,18 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
             else
             {
                 first_current_step_flag_ = 0;
-                t_total_zmp = t_total_const_;
+                t_total_zmp = t_total_;
             }
 
+            // onestepZmp(i, temp_px, temp_py);
             onestepZmp_wo_offset(i, t_total_zmp, temp_px, temp_py, temp_px_wo_offset, temp_py_wo_offset);
             for (unsigned int j = 0; j < t_total_zmp; j++)
             {
                 ref_zmp_mj_(index + j, 0) = temp_px(j);
                 ref_zmp_mj_(index + j, 1) = temp_py(j);
+
+                ref_zmp_mj_wo_offset_(index + j, 0) = temp_px_wo_offset(j);
+                ref_zmp_mj_wo_offset_(index + j, 1) = temp_py_wo_offset(j);
             }
             index = index + t_total_zmp;
         }
@@ -13248,10 +13256,13 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
         {
             ref_zmp_mj_(index + j, 0) = ref_zmp_mj_(index - 1, 0);
             ref_zmp_mj_(index + j, 1) = ref_zmp_mj_(index - 1, 1);
+
+            ref_zmp_mj_wo_offset_(index + j, 0) = ref_zmp_mj_wo_offset_(index - 1, 0);
+            ref_zmp_mj_wo_offset_(index + j, 1) = ref_zmp_mj_wo_offset_(index - 1, 1);
         }
-        index = index + 3.0 * hz_; 
+        index = index + 3.0 * hz_; // Norm size must be larger than this addtional zmp size.
     }
-    else 
+    else // reference ZMP during walking
     {
         for (unsigned int i = current_step_num_; i < current_step_num_ + planning_step_num; i++)
         {
@@ -13261,7 +13272,7 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
                 {
                     first_current_step_flag_ = 0;
                     first_current_step_number_ = current_step_num_; // save the value of the first current_step_number
-
+                    // t_total_zmp = t_total_;
                     if (walking_tick_mj < t_start_ + t_total_ - t_double2_ - t_rest_last_ - zmp_modif_time_margin_)
                     {
                         t_total_zmp = t_total_const_;
@@ -13280,17 +13291,20 @@ void AvatarController::zmpGenerator(const unsigned int norm_size, const unsigned
             else
             {
                 first_current_step_flag_ = 0;
-                t_total_zmp = t_total_const_;
+                t_total_zmp = t_total_;
             }
 
-            onestepZmp_wo_offset(i, t_total_zmp, temp_px, temp_py, temp_px_wo_offset, temp_py_wo_offset); 
+            // onestepZmp(i, temp_px, temp_py);
+            onestepZmp_wo_offset(i, t_total_zmp, temp_px, temp_py, temp_px_wo_offset, temp_py_wo_offset); // temp px, py에 1 step의 ZMP를 planning step num 번 담는다.
 
             for (unsigned int j = 0; j < t_total_zmp; j++)
             {
                 ref_zmp_mj_(index + j, 0) = temp_px(j);
                 ref_zmp_mj_(index + j, 1) = temp_py(j);
+
+                ref_zmp_mj_wo_offset_(index + j, 0) = temp_px_wo_offset(j);
+                ref_zmp_mj_wo_offset_(index + j, 1) = temp_py_wo_offset(j);
             }
-            
             index = index + t_total_zmp;
         }
     }
@@ -13414,17 +13428,17 @@ void AvatarController::onestepZmp_wo_offset(unsigned int current_step_number, do
 
             Kx_wo_offset = foot_step_support_frame_(current_step_number - 1, 0) - ((foot_step_support_frame_(current_step_number - 2, 0) + foot_step_support_frame_(current_step_number - 1, 0)) / 2);
             Ky_wo_offset = foot_step_support_frame_(current_step_number - 1, 1) - ((foot_step_support_frame_(current_step_number - 2, 1) + foot_step_support_frame_(current_step_number - 1, 1)) / 2);
-            Kx2_wo_offset = (foot_step_support_frame_(current_step_number, prev_stepping_flag) + foot_step_support_frame_(current_step_number, 0) + foot_step_support_frame_(current_step_number - 1, 0)) / 2 - foot_step_support_frame_(current_step_number - 1, 0);
+            Kx2_wo_offset = (m_del_zmp_x(current_step_number, prev_stepping_flag) + foot_step_support_frame_(current_step_number, 0) + foot_step_support_frame_(current_step_number - 1, 0)) / 2 - foot_step_support_frame_(current_step_number - 1, 0);
             Ky2_wo_offset = (m_del_zmp_y(current_step_number, prev_stepping_flag) + foot_step_support_frame_(current_step_number, 1) + foot_step_support_frame_(current_step_number - 1, 1)) / 2 - foot_step_support_frame_(current_step_number - 1, 1);
 
             for (int i = 0; i < t_total_zmp; i++)
             {
                 if (i < t_rest_init_ + t_double1_) // first flag
                 {                                  // when the supporting foot is change, previously adjusted footstep must be reflected in the current DSP.
-                    temp_px(i) = (foot_step_support_frame_offset_(current_step_number - 2, 0) - foot_step_support_frame_(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 1, 0)) / 2 + (Kx + foot_step_support_frame_(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
+                    temp_px(i) = (foot_step_support_frame_offset_(current_step_number - 2, 0) - m_del_zmp_x(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 1, 0)) / 2 + (Kx + m_del_zmp_x(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
                     temp_py(i) = (foot_step_support_frame_offset_(current_step_number - 2, 1) - m_del_zmp_y(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 1, 1)) / 2 + (Ky + m_del_zmp_y(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
 
-                    temp_px_wo_offset(i) = (foot_step_support_frame_(current_step_number - 2, 0) - foot_step_support_frame_(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_(current_step_number - 1, 0)) / 2 + (Kx_wo_offset + foot_step_support_frame_(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
+                    temp_px_wo_offset(i) = (foot_step_support_frame_(current_step_number - 2, 0) - m_del_zmp_x(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_(current_step_number - 1, 0)) / 2 + (Kx_wo_offset + m_del_zmp_x(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
                     temp_py_wo_offset(i) = (foot_step_support_frame_(current_step_number - 2, 1) - m_del_zmp_y(current_step_number - 1, current_stepping_flag) + foot_step_support_frame_(current_step_number - 1, 1)) / 2 + (Ky_wo_offset + m_del_zmp_y(current_step_number - 1, current_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
                 }
                 else if (i >= t_rest_init_ + t_double1_ && i < t_total_zmp - t_rest_last_ - t_double2_)
@@ -13463,7 +13477,7 @@ void AvatarController::onestepZmp_wo_offset(unsigned int current_step_number, do
                 {
                     if (first_current_step_number_ + 1 == current_step_number)
                     {
-                        temp_px(i) = (foot_step_support_frame_(first_current_step_number_, prev_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 2, 0) + foot_step_support_frame_offset_(current_step_number - 1, 0)) / 2 + (Kx + foot_step_support_frame_(first_current_step_number_, prev_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
+                        temp_px(i) = (m_del_zmp_x(first_current_step_number_, prev_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 2, 0) + foot_step_support_frame_offset_(current_step_number - 1, 0)) / 2 + (Kx + m_del_zmp_x(first_current_step_number_, prev_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
                         temp_py(i) = (m_del_zmp_y(first_current_step_number_, prev_stepping_flag) + foot_step_support_frame_offset_(current_step_number - 2, 1) + foot_step_support_frame_offset_(current_step_number - 1, 1)) / 2 + (Ky + m_del_zmp_y(first_current_step_number_, prev_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
 
                         temp_px_wo_offset(i) = (m_del_zmp_x(first_current_step_number_, prev_stepping_flag) + foot_step_support_frame_(current_step_number - 2, 0) + foot_step_support_frame_(current_step_number - 1, 0)) / 2 + (Kx_wo_offset + m_del_zmp_x(first_current_step_number_, prev_stepping_flag) / 2) / (t_rest_init_ + t_double1_) * (i + 1);
@@ -17638,11 +17652,11 @@ void AvatarController::getComTrajectory_mpc()
         y_mpc_i_(0) = yi_mj_;
 
         // NMPC
-        KAIST_DCM_NMPC knmpc;
-        nmpc_ctrl_input.setZero(knmpc.input_length);
-        nmpc_ctrl_input_diff.setZero(knmpc.input_length);
-        nmpc_ctrl_input_prev.setZero(knmpc.input_length);
-        nmpc_ctrl_input_thread.setZero(knmpc.input_length);
+        DyrosContactScheduler nmpc;
+        nmpc_ctrl_input.setZero(nmpc.nmpc_ctrl_input_thread_num);
+        nmpc_ctrl_input_diff.setZero(nmpc.nmpc_ctrl_input_thread_num);
+        nmpc_ctrl_input_prev.setZero(nmpc.nmpc_ctrl_input_thread_num);
+        nmpc_ctrl_input_thread.setZero(nmpc.nmpc_ctrl_input_thread_num);
 
         is_com_init = false;
     }
@@ -17655,16 +17669,6 @@ void AvatarController::getComTrajectory_mpc()
     ZMP_X_REF_ = ref_zmp_mj_(walking_tick_mj - zmp_start_time_mj_, 0);
     ZMP_Y_REF_ = ref_zmp_mj_(walking_tick_mj - zmp_start_time_mj_, 1);
 
-    int alpha_step = 0;
-    if (foot_step_(current_step_num_, 6) == 1)
-    {
-        alpha_step = 1;
-    }
-    else
-    {
-        alpha_step = -1;
-    }        
-
     if (walking_tick_mj == t_start_ && current_step_num_ > 0)
     {
         x_hat_r_ = x_hat_r_sc_;
@@ -17673,6 +17677,8 @@ void AvatarController::getComTrajectory_mpc()
         y_hat_r_ = y_hat_r_sc_;
         y_hat_r_p_ = y_hat_r_p_sc_;
     }
+
+    
 
     ///////////////////////////////////////
     // computeslow() -> computeThread3() //
@@ -17695,10 +17701,7 @@ void AvatarController::getComTrajectory_mpc()
         /////////////////
         // CP-MPC (MJ) //
         t_total_thread_ = t_total_;
-        t_rest_init_thread_ = t_rest_init_;
-        t_rest_last_thread_ = t_rest_last_;
         cp_measured_thread_ = cp_measured_;
-        alpha_step_thread_ = alpha_step;
         rfoot_support_current_thread_ = rfoot_support_current_;
         lfoot_support_current_thread_ = lfoot_support_current_;
 
@@ -17707,6 +17710,10 @@ void AvatarController::getComTrajectory_mpc()
         is_ssp_thread = is_ssp;
         is_dsp1_thread = is_dsp1;
         is_dsp2_thread = is_dsp2;
+
+        m_del_zmp_x_thread = m_del_zmp_x;
+        m_del_zmp_y_thread = m_del_zmp_y;
+        foot_step_support_frame_thread = foot_step_support_frame_;
 
         is_left_foot_support_thread = is_left_foot_support;
         is_right_foot_support_thread = is_right_foot_support;
@@ -17763,63 +17770,6 @@ void AvatarController::getComTrajectory_mpc()
         mpc_y_update_ = false;
     }
 
-    /////////////////////////////////////////////////
-    // computeThread3() -> computeslow()  (CP MPC) //
-    // Output: ZMP control input, Stepping (del_F) //
-    if(cpmpc_x_update_ == true)
-    {
-        if(atb_cpmpc_x_update_ == false) 
-        {
-            atb_cpmpc_x_update_ = true;
-
-            if(current_step_num_thread2_ == current_step_num_)        
-            {
-                cp_des_zmp_x_prev_ = cp_des_zmp_x_;         // store previous cp_des_zmp
-                cp_des_zmp_x_ = cpmpc_des_zmp_x_thread_;    // update current cp_des_zmp from the 'computethread3'
-                
-                del_F_x_ = del_F_x_thread_;
-                del_F_x_next_ = del_F_x_thread_;
-                
-                cpmpc_interpol_cnt_x_ = 1;
-            }
-            else
-            {
-                cout<<"CP output X is ignored"<<endl;
-            }
-            atb_cpmpc_x_update_ = false;
-        }
-
-        cpmpc_diff_(0) = cp_des_zmp_x_ - cp_des_zmp_x_prev_;
-        cpmpc_x_update_ = false;
-    }
-
-    if(cpmpc_y_update_ == true)
-    {
-        if(atb_cpmpc_y_update_ == false) 
-        {
-            atb_cpmpc_y_update_ = true;
-
-            if(current_step_num_thread2_ == current_step_num_)        
-            {
-                cp_des_zmp_y_prev_ = cp_des_zmp_y_;
-                cp_des_zmp_y_ = cpmpc_des_zmp_y_thread_;
-                
-                del_F_y_ = del_F_y_thread_;
-                del_F_y_next_ = del_F_y_thread_;
-
-                cpmpc_interpol_cnt_y_ = 1;
-            }
-            else
-            {
-                cout<<"CP output Y is ignored"<<endl;
-            }
-            atb_cpmpc_y_update_ = false;
-        }
-
-        cpmpc_diff_(1) = cp_des_zmp_y_ - cp_des_zmp_y_prev_;
-        cpmpc_y_update_ = false;
-    }
-
     ///////////////////////////////////////////////////////////
     // computeThread3() -> computeslow() (Nonlinear DCM MPC) //
     // Output: ZMP, Step position, Step time, Hip torque     //
@@ -17864,45 +17814,17 @@ void AvatarController::getComTrajectory_mpc()
     wieber_interpol_cnt_x_++;
     wieber_interpol_cnt_y_++;
 
-    /////////////////////////////////
-    // CP-MPC linear interpolation //
-    double x_cpmpc_lin_spline = (thread_freq/hz_) * cpmpc_interpol_cnt_x_;
-    double y_cpmpc_lin_spline = (thread_freq/hz_) * cpmpc_interpol_cnt_y_;
-
-    x_cpmpc_lin_spline = DyrosMath::minmax_cut(x_cpmpc_lin_spline, 0.0, 1.0);
-    y_cpmpc_lin_spline = DyrosMath::minmax_cut(y_cpmpc_lin_spline, 0.0, 1.0);
-
-    des_zmp_interpol_(0) = x_cpmpc_lin_spline * cpmpc_diff_(0) + cp_des_zmp_x_prev_;
-    des_zmp_interpol_(1) = y_cpmpc_lin_spline * cpmpc_diff_(1) + cp_des_zmp_y_prev_;
-
-    cpmpc_interpol_cnt_x_++;
-    cpmpc_interpol_cnt_y_++;
-
     ///////////////////////////////////
     // DCM-NMPC linear interpolation //
     double nmpc_lin_spline = (thread_freq/hz_) * nmpc_dcm_interpol_cnt_;
 
     nmpc_lin_spline = DyrosMath::minmax_cut(nmpc_lin_spline, 0.0, 1.0);
 
-    del_zmp_x_dcm_nmpc        = nmpc_ctrl_input(0);
-    del_zmp_y_dcm_nmpc        = nmpc_ctrl_input(1);
-    // del_footstep_x_dcm_nmpc   = nmpc_ctrl_input(2);
-    // del_footstep_y_dcm_nmpc   = nmpc_ctrl_input(3);
-    // del_dcm_offset_x_dcm_nmpc = nmpc_ctrl_input(4);
-    // del_dcm_offset_y_dcm_nmpc = nmpc_ctrl_input(5);
-    // del_steptime_dcm_nmpc     = nmpc_ctrl_input(6);
-    // ddtheta_x_dcm_nmpc      = nmpc_ctrl_input(7);
-    // ddtheta_y_dcm_nmpc      = nmpc_ctrl_input(8);
-
-    // del_zmp_x_dcm_nmpc        = nmpc_lin_spline * nmpc_ctrl_input_diff(0) + nmpc_ctrl_input_prev(0);
-    // del_zmp_y_dcm_nmpc        = nmpc_lin_spline * nmpc_ctrl_input_diff(1) + nmpc_ctrl_input_prev(1);
+    del_zmp_x_dcm_nmpc        = nmpc_lin_spline * nmpc_ctrl_input_diff(0) + nmpc_ctrl_input_prev(0);
+    del_zmp_y_dcm_nmpc        = nmpc_lin_spline * nmpc_ctrl_input_diff(1) + nmpc_ctrl_input_prev(1);
     del_footstep_x_dcm_nmpc   = nmpc_lin_spline * nmpc_ctrl_input_diff(2) + nmpc_ctrl_input_prev(2);
     del_footstep_y_dcm_nmpc   = nmpc_lin_spline * nmpc_ctrl_input_diff(3) + nmpc_ctrl_input_prev(3);
-    del_dcm_offset_x_dcm_nmpc = nmpc_lin_spline * nmpc_ctrl_input_diff(4) + nmpc_ctrl_input_prev(4);
-    del_dcm_offset_y_dcm_nmpc = nmpc_lin_spline * nmpc_ctrl_input_diff(5) + nmpc_ctrl_input_prev(5);
-    del_steptime_dcm_nmpc     = nmpc_lin_spline * nmpc_ctrl_input_diff(6) + nmpc_ctrl_input_prev(6);
-    ddtheta_x_dcm_nmpc      = nmpc_lin_spline * nmpc_ctrl_input_diff(7) + nmpc_ctrl_input_prev(7);
-    ddtheta_y_dcm_nmpc      = nmpc_lin_spline * nmpc_ctrl_input_diff(8) + nmpc_ctrl_input_prev(8);
+    del_steptime_dcm_nmpc     = nmpc_lin_spline * nmpc_ctrl_input_diff(4) + nmpc_ctrl_input_prev(4);
     nmpc_dcm_interpol_cnt_++;
 
     ///////////////////////
@@ -18026,10 +17948,7 @@ void AvatarController::comGenerator_MPC_wieber(double MPC_freq, double T, double
         /////////////////
         // CP-MPC (MJ) //
         t_total_mpc_ = t_total_thread_;
-        t_rest_init_mpc_ = t_rest_init_thread_;
-        t_rest_last_mpc_ = t_rest_last_thread_;
         cp_measured_mpc_ = cp_measured_thread_;
-        alpha_step_mpc_ = alpha_step_thread_;
         lfoot_support_current_mpc_ = lfoot_support_current_thread_;
         rfoot_support_current_mpc_ = rfoot_support_current_thread_;
 
@@ -18041,6 +17960,10 @@ void AvatarController::comGenerator_MPC_wieber(double MPC_freq, double T, double
 
         is_left_foot_support_mpc = is_left_foot_support_thread;
         is_right_foot_support_mpc = is_right_foot_support_thread;
+
+        m_del_zmp_x_mpc = m_del_zmp_x_thread;
+        m_del_zmp_y_mpc = m_del_zmp_y_thread;
+        foot_step_support_frame_mpc = foot_step_support_frame_thread;
 
         atb_mpc_update_ = false;
     }
@@ -18088,8 +18011,8 @@ void AvatarController::comGenerator_MPC_wieber(double MPC_freq, double T, double
     Q = w1 * Identity + w2 * P_zu.transpose() * P_zu;
 
     // Reference ZMP
-    Eigen::VectorXd zx_ref; zx_ref.setZero(N);
-    Eigen::VectorXd zy_ref; zy_ref.setZero(N);
+    zx_ref.setZero(N);
+    zy_ref.setZero(N);
     Eigen::VectorXd px; px.setZero(N);
     Eigen::VectorXd py; py.setZero(N);
     Z_x_ref_cpmpc_only_.setZero(N);
@@ -20973,6 +20896,9 @@ void AvatarController::getFootTrajectory_stepping()
         target_swing_foot(i) = foot_step_support_frame_(current_step_num_, i);
     }
 
+    del_F_(0) = target_swing_foot(0);   // FOOT STEPPING DEACTIVATION
+    del_F_(1) = target_swing_foot(1);
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // In page 3.                                                                                                   //
     // In this situation, in order to prevent the impact between the swing foot and the ground,                     //
@@ -21483,15 +21409,12 @@ void AvatarController::dcmController_NMPC_DYROS()
 
     DyrosContactScheduler nmpc;
 
-    const int planning_step_number = nmpc.planning_step_number;
-    const int n_phi = 2 * planning_step_number + 1;
-    const int n_wp = n_phi + 1;
-    const int state_length = nmpc.state_length;         
-    const int input_length = nmpc.input_length;  
+    const int n_phi                = nmpc.n_phi;
+    const int state_length         = nmpc.state_length;         
+    const int input_length         = nmpc.input_length;  
     const int total_num_constraint = nmpc.total_num_constraint;            
 
-    Eigen::VectorXd v;   v.setZero(input_length * n_phi);
-    Eigen::VectorXd dv;  dv.setOnes(input_length * n_phi);  dv  = 1000.0 * dv;
+    Eigen::VectorXd dv;   dv.setOnes(input_length * n_phi);  dv  = 1000.0 * dv;
     Eigen::VectorXd dv_; dv_.setZero(input_length * n_phi);
 
     Eigen::MatrixXd Q;  Eigen::VectorXd p; 
@@ -21499,18 +21422,42 @@ void AvatarController::dcmController_NMPC_DYROS()
 
     if(is_dcm_nmpc_init == true)
     {
-        SQP_NMPC_DCM_.InitializeProblemSize(input_length * n_phi, total_num_constraint * n_phi);
+        SQP_NMPC_DCM_.InitializeProblemSize(input_length * n_phi, total_num_constraint);
         std::cout << "NMPC Initialization Complete" << std::endl;
-
+        
+        v_nmpc_.setZero(input_length * n_phi);
+        
         is_dcm_nmpc_init = false;
     } 
+    
+    Eigen::VectorXd T_step_ref_horizon; T_step_ref_horizon.setZero(n_phi);
+    Eigen::MatrixXd xi_ref_horizon;     xi_ref_horizon.setZero(state_length, n_phi);
+    Eigen::MatrixXd p_init_ref_horizon; p_init_ref_horizon.setZero(state_length, n_phi);
+    Eigen::MatrixXd p_end_ref_horizon;  p_end_ref_horizon.setZero(state_length, n_phi);
+    Eigen::VectorXd big_M; big_M.setZero(n_phi); 
 
+    int mpc_tick = walking_tick_mj_mpc_ - zmp_start_time_mj_mpc_;
+
+    double transition_phase_current_time = 0.0;
+    if(is_dsp1_mpc == true)       {transition_phase_current_time = mpc_tick + (t_rest_last_ + t_double2_);}
+    else if (is_ssp_mpc == true)  {transition_phase_current_time = mpc_tick - (t_rest_init_ + t_double1_);} 
+    else if (is_dsp2_mpc == true) {transition_phase_current_time = mpc_tick - (t_total_const_- (t_rest_last_ + t_double2_));} 
+    transition_phase_current_time = transition_phase_current_time / hz_;
+    
     int iter = 0;
-    if(current_step_num_mpc_ > 0 && (current_step_num_mpc_ != total_step_num_-1))
+    if(current_step_num_mpc_ >= 2 && (current_step_num_mpc_ != total_step_num_-1))
     {
+        referenceWindow(xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, big_M, transition_phase_current_time);
+
         while (dv.norm() > 1.0)
         {
-            getGradHessDcm_NMPC_CasADi(v, Q, p, A, lbA, ubA);
+            if (iter >= 3)  // At most 3 times.
+            {
+                std::cout << "ITERATION EXCEED" << std::endl;
+                break;
+            }
+
+            getGradHessDcm_NMPC_CasADi(v_nmpc_, Q, p, A, lbA, ubA, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, big_M, transition_phase_current_time);
 
             SQP_NMPC_DCM_.EnableEqualityCondition(equality_condition_eps_);
             SQP_NMPC_DCM_.UpdateMinProblem(Q, p);
@@ -21526,15 +21473,10 @@ void AvatarController::dcmController_NMPC_DYROS()
             {
                 dv.setZero();
                 std::cout << "NMPC CANNOT BE SOLVED." << std::endl;
-                is_sudden_stop = true;
+                // is_sudden_stop = true;
                 break;    
             }
 
-            if (iter >= 3)  // At most 3 times.
-            {
-                std::cout << "ITERATION EXCEED" << std::endl;
-                break;
-            }
 
             static bool flag_NAN = false;
             for (int i = 0; i < input_length * n_phi; i++)
@@ -21545,19 +21487,30 @@ void AvatarController::dcmController_NMPC_DYROS()
                 break;
             }
 
-            v = v + 1.0 * dv;
+            v_nmpc_ = v_nmpc_ + 1.0 * dv;
 
             iter = iter + 1;
         }
+
+        double vT_x = v_nmpc_(0);
+        double vT_y = v_nmpc_(1);
+        double v0_x = v_nmpc_(2);
+        double v0_y = v_nmpc_(3);
+        double u_x  = v_nmpc_(4);
+        double u_y  = v_nmpc_(5);
+        double T_new= T_step_ref_horizon(0) + v_nmpc_(8);
+
+        double zmp_ctrl_x = (1 - transition_phase_current_time / T_new) * v0_x + transition_phase_current_time / T_new * vT_x;
+        double zmp_ctrl_y = (1 - transition_phase_current_time / T_new) * v0_y + transition_phase_current_time / T_new * vT_y;
 
         if (atb_nmpc_update_ == false)
         {
             atb_nmpc_update_ = true;
 
-            nmpc_ctrl_input_thread = v.segment(0, input_length);
+            dU_x_prev = u_x;
+            dU_y_prev = u_y;
 
-            dU_x_prev = nmpc_ctrl_input_thread(4);
-            dU_y_prev = nmpc_ctrl_input_thread(5);
+            nmpc_ctrl_input_thread << zmp_ctrl_x, zmp_ctrl_y, u_x, u_y, v_nmpc_(8);
 
             atb_nmpc_update_ = false;
         }
@@ -21572,139 +21525,126 @@ void AvatarController::dcmController_NMPC_DYROS()
         }
         // std::cout << "iter num : " << iter << std::endl; 
         // std::cout << "dv norm : " << dv.norm() << std::endl; 
+
+        KW_graph7_8 << v_nmpc_.transpose() << std::endl;
+        KW_graph7_9 << zmp_ctrl_x << " " << zmp_ctrl_y << " " << del_zmp.transpose() << std::endl;
     }
 
     std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     KW_graph_nmpc_time << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
-    // KW_graph_nmpc_error << v.segment(0, state_length * MPC_Horizon).transpose() << std::endl;
 }
 
 void AvatarController::dcmController_NMPC_DYROS(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double ddtheta_x, double ddtheta_y)
 {
-    /////////////////////////////////////////////
-    // ZMP -> ZmpController() (in computeslow) //
-    del_zmp_nmpc.setZero();
-    if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
-    {
-        if (is_ssp == true)
-        {
-            del_zmp_nmpc(0) = del_zmp_x;    // From Nonlinear MPC
-            del_zmp_nmpc(1) = del_zmp_y;
-        }
-        else if(is_dsp1 == true)
-        {
-            del_zmp_nmpc(0) = del_zmp(0);
-            del_zmp_nmpc(1) = del_zmp(1);
-        }
-        else
-        {
-            del_zmp_nmpc(0) = del_zmp(0);
-            del_zmp_nmpc(1) = del_zmp(1);
-        }
-    }
-    else
-    {
-        del_zmp_nmpc(0) = del_zmp(0);
-        del_zmp_nmpc(1) = del_zmp(1);
-    }
+    // /////////////////////////////////////////////
+    // // ZMP -> ZmpController() (in computeslow) //
+    // del_zmp_nmpc.setZero();
+    // if(current_step_num_ > 2 && (current_step_num_ != total_step_num_-1))
+    // {
+    //     del_zmp_nmpc(0) = del_zmp_x;    // From Nonlinear MPC
+    //     del_zmp_nmpc(1) = del_zmp_y;
+    // }
+    // else
+    // {
+    //     del_zmp_nmpc(0) = del_zmp(0);
+    //     del_zmp_nmpc(1) = del_zmp(1);
+    // }
 
-    ///////////////////////////////////////////////////////////////
-    // Stepping -> getFootTrajectory_stepping() (in computeslow) //
-    del_F_.setZero();
-    if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
-    {
-        if (is_ssp == true)
-        {
-            del_F_(0) = foot_step_support_frame_(current_step_num_, 0) + del_footstep_x;
-            del_F_(1) = foot_step_support_frame_(current_step_num_, 1) + del_footstep_y;
+    // ///////////////////////////////////////////////////////////////
+    // // Stepping -> getFootTrajectory_stepping() (in computeslow) //
+    // del_F_.setZero();
+    // if(current_step_num_ > 2 && (current_step_num_ != total_step_num_-1))
+    // {
+    //     if (is_ssp == true)
+    //     {
+    //         del_F_(0) = foot_step_support_frame_(current_step_num_, 0) + del_footstep_x;
+    //         del_F_(1) = foot_step_support_frame_(current_step_num_, 1) + del_footstep_y;
 
-            if(is_ssp_over == true)
-            {
-                del_footstep_x_prev = del_footstep_x;
-                del_footstep_y_prev = del_footstep_y;
-            }
-        }
-        else if(is_dsp1 == true)
-        {
-            del_F_(0) = foot_step_support_frame_(current_step_num_, 0);
-            del_F_(1) = foot_step_support_frame_(current_step_num_, 1);
-        }
-        else
-        {
-            del_F_(0) = foot_step_support_frame_(current_step_num_, 0) + del_footstep_x_prev;
-            del_F_(1) = foot_step_support_frame_(current_step_num_, 1) + del_footstep_y_prev;
-        }
-    }
-    else
-    {
-        del_F_(0) = foot_step_support_frame_(current_step_num_, 0);
-        del_F_(1) = foot_step_support_frame_(current_step_num_, 1);     
-    }
+    //         if(is_ssp_over == true)
+    //         {
+    //             del_footstep_x_prev = del_footstep_x;
+    //             del_footstep_y_prev = del_footstep_y;
+    //         }
+    //     }
+    //     else if(is_dsp1 == true)
+    //     {
+    //         del_F_(0) = foot_step_support_frame_(current_step_num_, 0);
+    //         del_F_(1) = foot_step_support_frame_(current_step_num_, 1);
+    //     }
+    //     else
+    //     {
+    //         del_F_(0) = foot_step_support_frame_(current_step_num_, 0) + del_footstep_x_prev;
+    //         del_F_(1) = foot_step_support_frame_(current_step_num_, 1) + del_footstep_y_prev;
+    //     }
+    // }
+    // else
+    // {
+    //     del_F_(0) = foot_step_support_frame_(current_step_num_, 0);
+    //     del_F_(1) = foot_step_support_frame_(current_step_num_, 1);     
+    // }
 
-    ///////////////
-    // Step time //
-    double stepping_start_tick = t_start_ + t_double1_ + t_rest_init_;
-    double single_support_tick = (t_total_const_ - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_));
+    // ///////////////
+    // // Step time //
+    // double stepping_start_tick = t_start_ + t_double1_ + t_rest_init_;
+    // double single_support_tick = (t_total_const_ - (t_rest_init_ + t_rest_last_ + t_double1_ + t_double2_));
     double dT_tick_nmpc        = round(dT * 1000) / 1000.0 * hz_;
 
-    if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
-    {
-        if(is_ssp == true)     // exp(wn*T) converges. 
-        {
-            if ((walking_tick_mj - stepping_start_tick) < single_support_tick + dT_tick_nmpc - zmp_modif_time_margin_ - 1)  
-            {           
-                t_total_ = t_total_const_ + dT_tick_nmpc;
-                t_last_  = t_start_ + t_total_ - 1;
-            }
-        }
-    }
-    else
-    {
-        t_total_ = t_total_const_;
-        t_last_  = t_start_ + t_total_ - 1;
-    }
+    // if(current_step_num_ > 2 && (current_step_num_ != total_step_num_-1))
+    // {
+    //     if(is_ssp == true)     // exp(wn*T) converges. 
+    //     {
+    //         if ((walking_tick_mj - stepping_start_tick) < single_support_tick + dT_tick_nmpc - zmp_modif_time_margin_ - 1)  
+    //         {           
+    //             t_total_ = t_total_const_ + dT_tick_nmpc;
+    //             t_last_  = t_start_ + t_total_ - 1;
+    //         }
+    //     }
+    // }
+    // else
+    // {
+    //     t_total_ = t_total_const_;
+    //     t_last_  = t_start_ + t_total_ - 1;
+    // }
 
-    ////////////////
-    // Hip torque //
-    KAIST_DCM_NMPC knmpc;
+    // ////////////////
+    // // Hip torque //
+    // if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
+    // {
+    //     ///////////////////////
+    //     // Euler integration //
+    //     double ddtheta_x_dcm_nmpc_return = -knmpc.kp * theta_x_dcm_nmpc_prev - knmpc.kd * dtheta_x_dcm_nmpc_prev;
+    //     ddtheta_x_dcm_nmpc_prev = ddtheta_x + ddtheta_x_dcm_nmpc_return;
+    //     dtheta_x_dcm_nmpc_prev  = dtheta_x_dcm_nmpc_prev + ddtheta_x_dcm_nmpc_prev * del_t;
+    //     theta_x_dcm_nmpc_prev   = theta_x_dcm_nmpc_prev + dtheta_x_dcm_nmpc_prev * del_t + (ddtheta_x_dcm_nmpc_prev / 2.0) * del_t * del_t;
 
-    if(current_step_num_ > 0 && (current_step_num_ != total_step_num_-1))
-    {
-        ///////////////////////
-        // Euler integration //
-        double ddtheta_x_dcm_nmpc_return = -knmpc.kp * theta_x_dcm_nmpc_prev - knmpc.kd * dtheta_x_dcm_nmpc_prev;
-        ddtheta_x_dcm_nmpc_prev = ddtheta_x + ddtheta_x_dcm_nmpc_return;
-        dtheta_x_dcm_nmpc_prev  = dtheta_x_dcm_nmpc_prev + ddtheta_x_dcm_nmpc_prev * del_t;
-        theta_x_dcm_nmpc_prev   = theta_x_dcm_nmpc_prev + dtheta_x_dcm_nmpc_prev * del_t + (ddtheta_x_dcm_nmpc_prev / 2.0) * del_t * del_t;
+    //     double ddtheta_y_dcm_nmpc_return = -knmpc.kp * theta_y_dcm_nmpc_prev - knmpc.kd * dtheta_y_dcm_nmpc_prev;
+    //     ddtheta_y_dcm_nmpc_prev = ddtheta_y + ddtheta_y_dcm_nmpc_return;
+    //     dtheta_y_dcm_nmpc_prev  = dtheta_y_dcm_nmpc_prev + ddtheta_y_dcm_nmpc_prev * del_t;
+    //     theta_y_dcm_nmpc_prev   = theta_y_dcm_nmpc_prev + dtheta_y_dcm_nmpc_prev * del_t + (ddtheta_y_dcm_nmpc_prev / 2.0) * del_t * del_t;
 
-        double ddtheta_y_dcm_nmpc_return = -knmpc.kp * theta_y_dcm_nmpc_prev - knmpc.kd * dtheta_y_dcm_nmpc_prev;
-        ddtheta_y_dcm_nmpc_prev = ddtheta_y + ddtheta_y_dcm_nmpc_return;
-        dtheta_y_dcm_nmpc_prev  = dtheta_y_dcm_nmpc_prev + ddtheta_y_dcm_nmpc_prev * del_t;
-        theta_y_dcm_nmpc_prev   = theta_y_dcm_nmpc_prev + dtheta_y_dcm_nmpc_prev * del_t + (ddtheta_y_dcm_nmpc_prev / 2.0) * del_t * del_t;
+    //     hiptorque_x_dcm_nmpc = knmpc.J_x * ddtheta_x_dcm_nmpc_prev;
+    //     hiptorque_y_dcm_nmpc = knmpc.J_y * ddtheta_y_dcm_nmpc_prev;
 
-        hiptorque_x_dcm_nmpc = knmpc.J_x * ddtheta_x_dcm_nmpc_prev;
-        hiptorque_y_dcm_nmpc = knmpc.J_y * ddtheta_y_dcm_nmpc_prev;
+    //     del_ang_momentum_prev_ = del_ang_momentum_;
 
-        del_ang_momentum_prev_ = del_ang_momentum_;
+    //     del_ang_momentum_(0) = del_ang_momentum_prev_(0) + del_t * hiptorque_x_dcm_nmpc;
+    //     del_ang_momentum_(1) = del_ang_momentum_prev_(1) + del_t * hiptorque_y_dcm_nmpc;
 
-        del_ang_momentum_(0) = del_ang_momentum_prev_(0) + del_t * hiptorque_x_dcm_nmpc;
-        del_ang_momentum_(1) = del_ang_momentum_prev_(1) + del_t * hiptorque_y_dcm_nmpc;
-
-        // deactivate
-        // del_ang_momentum_.setZero();
-        // del_ang_momentum_prev_.setZero();
-    }
-    else
-    {
+    //     // deactivate
+    //     // del_ang_momentum_.setZero();
+    //     // del_ang_momentum_prev_.setZero();
+    // }
+    // else
+    // {
         del_ang_momentum_.setZero();
         del_ang_momentum_prev_.setZero();
-    }
+    // }
 
-    KW_graph6 << (ZMP_X_REF_ + del_zmp_nmpc(0)) << " " << (ZMP_Y_REF_ + del_zmp_nmpc(1)) << " "
-              << (ZMP_X_REF_ + del_zmp(0)) << " " << (ZMP_Y_REF_ + del_zmp(1)) << " "
-              << del_F_(0) << " " <<  del_F_(1) << " "
+    KW_graph6 << (ZMP_X_REF_ + del_zmp_x) << " " << (ZMP_Y_REF_ + del_zmp_y) << " "
+              << (ZMP_X_REF_ + del_zmp(0))<< " " << (ZMP_Y_REF_ + del_zmp(1))<< " "
+              << foot_step_support_frame_(current_step_num_, 0) + del_footstep_x << " " << foot_step_support_frame_(current_step_num_, 1) + del_footstep_y << " "
               << del_dcm_offset_x_dcm_nmpc << " " << del_dcm_offset_y_dcm_nmpc << " "
-              << t_total_const_ / hz_ << " " << t_total_ / hz_ << " " 
+              << t_total_const_ / hz_ << " " << (t_total_const_ + dT_tick_nmpc) / hz_ << " " 
               << del_ang_momentum_(0) << " " << del_ang_momentum_(1) << std::endl;
 }
 
@@ -21997,8 +21937,8 @@ void AvatarController::CasADiFunctionGeneration()
     DyrosContactScheduler nmpc;
 
     const int planning_step_number = nmpc.planning_step_number;
-    const unsigned int n_phi = 2 * planning_step_number + 1;
-    const unsigned int n_wp  = n_phi + 1;
+    const unsigned int n_phi = nmpc.n_phi;
+    const unsigned int n_wp  = nmpc.n_wp;
     const int state_length = nmpc.state_length;
     const int input_length = nmpc.input_length;
 
@@ -22026,26 +21966,41 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX dU_x_min = casadi::SX::sym("dU_x_min");
     casadi::SX dU_y_max = casadi::SX::sym("dU_y_max");
     casadi::SX dU_y_min = casadi::SX::sym("dU_y_min");
-    casadi::SX dU_x_prev_thread = casadi::SX::sym("dU_x_prev_thread");
-    casadi::SX dU_y_prev_thread = casadi::SX::sym("dU_y_prev_thread");
+    casadi::SX dU_x_prev = casadi::SX::sym("dU_x_prev");
+    casadi::SX dU_y_prev = casadi::SX::sym("dU_y_prev");
 
     casadi::SX dT_max = casadi::SX::sym("dT_max");
     casadi::SX dT_min = casadi::SX::sym("dT_min");
 
-    casadi::SX xi_ref_horizon     = casadi::SX::sym("xi_ref_horizon", state_length, n_phi);
+    casadi::SX xi_ref_horizon     = casadi::SX::sym("xi_ref_horizon",     state_length, n_phi);
     casadi::SX p_init_ref_horizon = casadi::SX::sym("p_init_ref_horizon", state_length, n_phi);
-    casadi::SX p_end_ref_horizon  = casadi::SX::sym("p_end_ref_horizon", state_length, n_phi);
+    casadi::SX p_end_ref_horizon  = casadi::SX::sym("p_end_ref_horizon",  state_length, n_phi);
     casadi::SX T_step_ref_horizon = casadi::SX::sym("T_step_ref_horizon", n_phi);
 
     casadi::SX U = casadi::SX::sym("U", n_phi * input_length);
-    casadi::SX x = casadi::SX::sym("x", state_length);
-    
+    casadi::SX M = casadi::SX::sym("M", n_phi);  // Big M formulation
+
+    casadi::SX S = casadi::SX::zeros(2, 9);
+    S(0, 4) = 1; S(0, 6) = 1;
+    S(1, 5) = 1; S(1, 7) = 1;
+
     casadi::SX J = mtimes(transpose(U), mtimes(diag(gain_input_horizon), U));
+    for (int i = 0; i < n_phi; i++){
+        casadi::SX u      = U(casadi::Slice(i * input_length, (i+1) * input_length, 1));
+        casadi::SX Q1     = diag(gain_state_horizon(casadi::Slice(i * state_length, (i+1) * state_length, 1)));
+        casadi::SX Q2     = mtimes(transpose(S), mtimes(Q1, S));
+        casadi::SX J_temp = mtimes(transpose(u), mtimes(Q2, u));
+
+        J += J_temp;
+    }
     casadi::SX J_v = jacobian(J, U);
     casadi::SX J_vv = hessian(J, U);
 
-    // Equality constraint
-    casadi::SX ceq0;
+    casadi::SX x = casadi::SX::sym("x", state_length);
+
+    // Equality constraint //
+    // DCM Error dynamics
+    casadi::SX ceq1;
     casadi::SX xi_err_x = x(0);
     casadi::SX xi_err_y = x(1);
     for (int i = 0; i < n_phi; i++)
@@ -22060,16 +22015,12 @@ void AvatarController::CasADiFunctionGeneration()
         casadi::SX db_y     = U(input_length*i + 7);
         casadi::SX dT       = U(input_length*i + 8);
 
-        casadi::SX dU_x_prev;
-        casadi::SX dU_y_prev;
-        casadi::SX db_x_prev;
-        casadi::SX db_y_prev;
-
+        casadi::SX xi_init_x;
+        casadi::SX xi_init_y;
+    
         if (i > 0){
-            dU_x_prev = U(input_length*(i-1) + 4);
-            dU_y_prev = U(input_length*(i-1) + 5);
-            db_x_prev = U(input_length*(i-1) + 6);
-            db_y_prev = U(input_length*(i-1) + 7);    
+            xi_init_x = U(input_length*(i-1) + 4) + U(input_length*(i-1) + 6);
+            xi_init_y = U(input_length*(i-1) + 5) + U(input_length*(i-1) + 7);
         }
 
         casadi::SX xi_ref_x = xi_ref_horizon(0, i);
@@ -22077,6 +22028,7 @@ void AvatarController::CasADiFunctionGeneration()
 
         casadi::SX p_init_ref_x = p_init_ref_horizon(0, i);
         casadi::SX p_init_ref_y = p_init_ref_horizon(1, i);
+
         casadi::SX p_end_ref_x = p_end_ref_horizon(0, i);
         casadi::SX p_end_ref_y = p_end_ref_horizon(1, i);
         
@@ -22084,51 +22036,77 @@ void AvatarController::CasADiFunctionGeneration()
         
         casadi::SX T_step = T_step_ref + dT;
 
-        casadi::SX p_ref_x = ((1 - (t_step / T_step_ref)) * p_end_x - (t_step / T_step_ref) * p_init_x);
-        casadi::SX p_ref_y = ((1 - (t_step / T_step_ref)) * p_end_y - (t_step / T_step_ref) * p_init_y);
+        casadi::SX p_ref_x = (1 - (t_step / T_step_ref)) * p_init_ref_x + (t_step / T_step_ref) * p_end_ref_x;
+        casadi::SX p_ref_y = (1 - (t_step / T_step_ref)) * p_init_ref_y + (t_step / T_step_ref) * p_end_ref_y;
         
-        casadi::SX ceq0_x_sub;
-        casadi::SX ceq0_y_sub;
+        casadi::SX ceq1_x_sub;
+        casadi::SX ceq1_y_sub;
 
         if(i == 0)
         {
-            ceq0_x_sub = dU_x + db_x -
-                        (p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x) + 
-                        exp((T_step - t_step) / b) * (xi_err_x - (1 - (t_step / T_step_ref)) * p_init_x - (t_step / T_step_ref) * p_end_x - (b / T_step) * (p_end_x - p_init_x)) +
-                        (exp((T_step - t_step) / b) - exp((T_step_ref - t_step) / b)) * (xi_ref_x - p_ref_x) - 
-                        ((b / T_step) * exp((T_step - t_step) / b) - (b / T_step_ref) * exp((T_step_ref - t_step) / b)) * (p_end_ref_x - p_init_ref_x)
+            ceq1_x_sub = dU_x + db_x -
+                        (
+                        p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x)
+                      + exp((T_step - t_step) / b) * (xi_err_x - (1 - (t_step / T_step_ref)) * p_init_x - (t_step / T_step_ref) * p_end_x - (b / T_step) * (p_end_x - p_init_x))
+                      +(exp((T_step - t_step) / b) - exp((T_step_ref - t_step) / b)) * (xi_ref_x - p_ref_x)  
+                      -((b / T_step) * exp((T_step - t_step) / b) - (b / T_step_ref) * exp((T_step_ref - t_step) / b)) * (p_end_ref_x - p_init_ref_x)
                         );
 
-            ceq0_y_sub = dU_y + db_y -
-                        (p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y) + 
-                        exp((T_step - t_step) / b) * (xi_err_y - (1 - (t_step / T_step_ref)) * p_init_y - (t_step / T_step_ref) * p_end_y - (b / T_step) * (p_end_y - p_init_y)) +
-                        (exp((T_step - t_step) / b) - exp((T_step_ref - t_step) / b)) * (xi_ref_y - p_ref_y) - 
-                        ((b / T_step) * exp((T_step - t_step) / b) - (b / T_step_ref) * exp((T_step_ref - t_step) / b)) * (p_end_ref_y - p_init_ref_y)
+            ceq1_y_sub = dU_y + db_y -
+                        (
+                        p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y)
+                      + exp((T_step - t_step) / b) * (xi_err_y - (1 - (t_step / T_step_ref)) * p_init_y - (t_step / T_step_ref) * p_end_y - (b / T_step) * (p_end_y - p_init_y))
+                      +(exp((T_step - t_step) / b) - exp((T_step_ref - t_step) / b)) * (xi_ref_y - p_ref_y)
+                      -((b / T_step) * exp((T_step - t_step) / b) - (b / T_step_ref) * exp((T_step_ref - t_step) / b)) * (p_end_ref_y - p_init_ref_y)
                         );
         }
         else
         {
-            ceq0_x_sub = dU_x + db_x -
-                        (p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x) + 
-                        exp(T_step / b) * (dU_x_prev + db_x_prev - p_init_x - (b / T_step) * (p_end_x - p_init_x)) +
-                        (exp(T_step / b) - exp(T_step_ref / b)) * (xi_ref_x - p_init_ref_x) - 
-                        ((b / T_step) * exp(T_step / b) - (b / T_step_ref) * exp(T_step_ref / b)) * (p_end_ref_x - p_init_ref_x)
+            ceq1_x_sub = dU_x + db_x -
+                        (
+                        p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x) 
+                      + exp(T_step / b) * (xi_init_x - p_init_x - (b / T_step) * (p_end_x - p_init_x)) 
+                      + (exp(T_step / b) - exp(T_step_ref / b)) * (xi_ref_x - p_init_ref_x)  
+                      - ((b / T_step) * exp(T_step / b) - (b / T_step_ref) * exp(T_step_ref / b)) * (p_end_ref_x - p_init_ref_x)
                         );
 
-            ceq0_y_sub = dU_y + db_y -
-                        (p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y) + 
-                        exp(T_step / b) * (dU_y_prev + db_y_prev - p_init_y - (b / T_step) * (p_end_y - p_init_y)) +
-                        (exp(T_step / b) - exp(T_step_ref / b)) * (xi_ref_y - p_init_ref_y) - 
-                        ((b / T_step) * exp(T_step / b) - (b / T_step_ref) * exp(T_step_ref / b)) * (p_end_ref_y - p_init_ref_y)
+            ceq1_y_sub = dU_y + db_y -
+                        (
+                        p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y)  
+                      + exp(T_step / b) * (xi_init_y - p_init_y - (b / T_step) * (p_end_y - p_init_y)) 
+                      + (exp(T_step / b) - exp(T_step_ref / b)) * (xi_ref_y - p_init_ref_y)  
+                      - ((b / T_step) * exp(T_step / b) - (b / T_step_ref) * exp(T_step_ref / b)) * (p_end_ref_y - p_init_ref_y)
                         );
 
         }
     
-        ceq0 = vertcat(ceq0, ceq0_x_sub);
-        ceq0 = vertcat(ceq0, ceq0_y_sub);
+        ceq1 = vertcat(ceq1, ceq1_x_sub);
+        ceq1 = vertcat(ceq1, ceq1_y_sub);
     }
 
-    casadi::SX ceq0_v = jacobian(ceq0, U);
+    casadi::SX ceq1_v = jacobian(ceq1, U);
+
+    // VRP Heuristic Constraint
+    casadi::SX ceq2;
+    for (int i = 0; i < n_phi; i++)
+    {
+        casadi::SX p_end_x  = U(input_length*i + 0);
+        casadi::SX p_end_y  = U(input_length*i + 1);
+
+        casadi::SX p_init_x = U(input_length*i + 2);
+        casadi::SX p_init_y = U(input_length*i + 3);
+
+        casadi::SX ceq2_x_sub;
+        casadi::SX ceq2_y_sub;
+
+        ceq2_x_sub = p_end_x - p_init_x;
+        ceq2_y_sub = p_end_y - p_init_y;
+
+        ceq2 = vertcat(ceq2, ceq2_x_sub);
+        ceq2 = vertcat(ceq2, ceq2_y_sub);
+    }
+
+    casadi::SX ceq2_v = jacobian(ceq2, U);
 
     // Inequality constraints
     casadi::SX cineq1_max;
@@ -22141,6 +22119,10 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX cineq4_min;
     casadi::SX cineq5_max;
     casadi::SX cineq5_min;
+    casadi::SX cineq6_max;
+    casadi::SX cineq6_min;
+    casadi::SX cineq7_max;
+    casadi::SX cineq7_min;
 
     for (int i = 0; i < n_phi; i++)
     {
@@ -22154,53 +22136,83 @@ void AvatarController::CasADiFunctionGeneration()
         casadi::SX db_y     = U(input_length*i + 7);
         casadi::SX dT       = U(input_length*i + 8);
         
-        // ZMP
+        casadi::SX m = M(i);
+        
+        // end of ZMP
         casadi::SX cineq1_max_x_sub = p_end_x - p_c_x_max;
         casadi::SX cineq1_max_y_sub = p_end_y - p_c_y_max;
 
-        casadi::SX cineq1_min_x_sub = -p_end_x + p_c_x_min;  
-        casadi::SX cineq1_min_y_sub = -p_end_y + p_c_y_min;
+        casadi::SX cineq1_min_x_sub =-p_end_x + p_c_x_min;  
+        casadi::SX cineq1_min_y_sub =-p_end_y + p_c_y_min;
 
         cineq1_max = vertcat(cineq1_max, cineq1_max_x_sub, cineq1_max_y_sub);
         cineq1_min = vertcat(cineq1_min, cineq1_min_x_sub, cineq1_min_y_sub);
 
-        // ZMP
+        // Initial ZMP
         casadi::SX cineq2_max_x_sub = p_init_x - p_c_x_max;
         casadi::SX cineq2_max_y_sub = p_init_y - p_c_y_max;
 
-        casadi::SX cineq2_min_x_sub = -p_init_x + p_c_x_min;  
-        casadi::SX cineq2_min_y_sub = -p_init_y + p_c_y_min;
+        casadi::SX cineq2_min_x_sub =-p_init_x + p_c_x_min;  
+        casadi::SX cineq2_min_y_sub =-p_init_y + p_c_y_min;
 
         cineq2_max = vertcat(cineq2_max, cineq2_max_x_sub, cineq2_max_y_sub);
         cineq2_min = vertcat(cineq2_min, cineq2_min_x_sub, cineq2_min_y_sub);
 
-        // Footstep
+        // SSP Footstep
         casadi::SX cineq3_max_x_sub = dU_x - dU_x_max; 
         casadi::SX cineq3_max_y_sub = dU_y - dU_y_max;
 
-        casadi::SX cineq3_min_x_sub = -dU_x + dU_x_min; 
-        casadi::SX cineq3_min_y_sub = -dU_y + dU_y_min;
+        casadi::SX cineq3_min_x_sub =-dU_x + dU_x_min; 
+        casadi::SX cineq3_min_y_sub =-dU_y + dU_y_min;
 
         cineq3_max = vertcat(cineq3_max, cineq3_max_x_sub, cineq3_max_y_sub);
         cineq3_min = vertcat(cineq3_min, cineq3_min_x_sub, cineq3_min_y_sub);
 
+        // DSP Footstep
+        casadi::SX cineq4_max_x_sub = dU_x - m; 
+        casadi::SX cineq4_max_y_sub = dU_y - m;
+
+        casadi::SX cineq4_min_x_sub =-dU_x - m; 
+        casadi::SX cineq4_min_y_sub =-dU_y - m;
+
+        cineq4_max = vertcat(cineq4_max, cineq4_max_x_sub, cineq4_max_y_sub);
+        cineq4_min = vertcat(cineq4_min, cineq4_min_x_sub, cineq4_min_y_sub);
+
         // Step time
-        casadi::SX cineq4_max_sub = dT - dT_max;
-        casadi::SX cineq4_min_sub =-dT + dT_min;
+        casadi::SX cineq5_max_sub = dT - dT_max;
+        casadi::SX cineq5_min_sub =-dT + dT_min;
 
-        cineq4_max = vertcat(cineq4_max, cineq4_max_sub);
-        cineq4_min = vertcat(cineq4_min, cineq4_min_sub);
+        cineq5_max = vertcat(cineq5_max, cineq5_max_sub);
+        cineq5_min = vertcat(cineq5_min, cineq5_min_sub);
 
-        // Swing foot speed
-        casadi::SX cineq5_max_x_sub = (dU_x - dU_x_prev) - (i+1) * V_x_max * dt;
-        casadi::SX cineq5_max_y_sub = (dU_y - dU_y_prev) - (i+1) * V_y_max * dt;
+        // Current ZMP
+        casadi::SX T_step_ref = T_step_ref_horizon(i);
+        casadi::SX T_step = T_step_ref + dT;
 
-        casadi::SX cineq5_min_x_sub =-(dU_x - dU_x_prev) + (i+1) * V_x_min * dt;
-        casadi::SX cineq5_min_y_sub =-(dU_y - dU_y_prev) + (i+1) * V_y_min * dt;
+        casadi::SX p_x = (1 - (t_step / T_step)) * p_init_x + (t_step / T_step) * p_end_x;
+        casadi::SX p_y = (1 - (t_step / T_step)) * p_init_y + (t_step / T_step) * p_end_y;
 
-        cineq5_max = vertcat(cineq5_max, cineq5_max_x_sub, cineq5_max_y_sub);
-        cineq5_min = vertcat(cineq5_min, cineq5_min_x_sub, cineq5_min_y_sub);
+        casadi::SX cineq7_max_x_sub = p_x - p_c_x_max;
+        casadi::SX cineq7_max_y_sub = p_y - p_c_y_max;
+
+        casadi::SX cineq7_min_x_sub =-p_x + p_c_x_min;  
+        casadi::SX cineq7_min_y_sub =-p_y + p_c_y_min;
+
+        cineq7_max = vertcat(cineq7_max, cineq7_max_x_sub, cineq7_max_y_sub);
+        cineq7_min = vertcat(cineq7_min, cineq7_min_x_sub, cineq7_min_y_sub);
     }
+
+    // Swing foot speed
+    casadi::SX dU_x             = U(4);
+    casadi::SX dU_y             = U(5);
+    casadi::SX cineq6_max_x_sub = (dU_x - dU_x_prev) - V_x_max * dt;
+    casadi::SX cineq6_max_y_sub = (dU_y - dU_y_prev) - V_y_max * dt;
+
+    casadi::SX cineq6_min_x_sub =-(dU_x - dU_x_prev) + V_x_min * dt;
+    casadi::SX cineq6_min_y_sub =-(dU_y - dU_y_prev) + V_y_min * dt;
+
+    cineq6_max = vertcat(cineq6_max, cineq6_max_x_sub, cineq6_max_y_sub);
+    cineq6_min = vertcat(cineq6_min, cineq6_min_x_sub, cineq6_min_y_sub);
 
     casadi::SX cineq1_max_v = jacobian(cineq1_max, U);
     casadi::SX cineq1_min_v = jacobian(cineq1_min, U);
@@ -22212,35 +22224,49 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX cineq4_min_v = jacobian(cineq4_min, U);
     casadi::SX cineq5_max_v = jacobian(cineq5_max, U);
     casadi::SX cineq5_min_v = jacobian(cineq5_min, U);
+    casadi::SX cineq6_max_v = jacobian(cineq6_max, U);
+    casadi::SX cineq6_min_v = jacobian(cineq6_min, U);
+    casadi::SX cineq7_max_v = jacobian(cineq7_max, U);
+    casadi::SX cineq7_min_v = jacobian(cineq7_min, U);
 
     // Function Generation //
-    casadi::Function J_v_func("J_v_func",  {gain_input_horizon, U}, {J_v});
-    casadi::Function J_vv_func("J_vv_func",{gain_input_horizon, U}, {J_vv});
+    casadi::Function J_v_func("J_v_func",  {gain_state_horizon, gain_input_horizon, U}, {J_v});
+    casadi::Function J_vv_func("J_vv_func",{gain_state_horizon, gain_input_horizon, U}, {J_vv});
 
-    casadi::Function ceq0_func("ceq0_func",     {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq0});
-    casadi::Function ceq0_v_func("ceq0_v_func", {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq0_v});
+    casadi::Function ceq1_func("ceq1_func",     {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1});
+    casadi::Function ceq2_func("ceq2_func",     {U}, {ceq2});
+    casadi::Function ceq1_v_func("ceq1_v_func", {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1_v});
+    casadi::Function ceq2_v_func("ceq2_v_func", {U}, {ceq2_v});
 
-    casadi::Function cineq1_max_func("cineq1_max_func",{U, p_c_x_max, p_c_y_max},                                     {cineq1_max});
-    casadi::Function cineq1_min_func("cineq1_min_func",{U, p_c_x_min, p_c_y_min},                                     {cineq1_min});
-    casadi::Function cineq2_max_func("cineq2_max_func",{U, p_c_x_max, p_c_y_max},                                     {cineq2_max});
-    casadi::Function cineq2_min_func("cineq2_min_func",{U, p_c_x_min, p_c_y_min},                                     {cineq2_min});
-    casadi::Function cineq3_max_func("cineq3_max_func",{U, dU_x_max, dU_y_max},                                       {cineq3_max});
-    casadi::Function cineq3_min_func("cineq3_min_func",{U, dU_x_min, dU_y_min},                                       {cineq3_min});
-    casadi::Function cineq4_max_func("cineq4_max_func",{U, dT_max},                                                   {cineq4_max});
-    casadi::Function cineq4_min_func("cineq4_min_func",{U, dT_min},                                                   {cineq4_min});
-    casadi::Function cineq5_max_func("cineq5_max_func",{U, V_x_max, V_y_max, dU_x_prev_thread, dU_y_prev_thread, dt}, {cineq5_max});
-    casadi::Function cineq5_min_func("cineq5_min_func",{U, V_x_min, V_y_min, dU_x_prev_thread, dU_y_prev_thread, dt}, {cineq5_min});
+    casadi::Function cineq1_max_func("cineq1_max_func", {U, p_c_x_max, p_c_y_max},                             {cineq1_max});
+    casadi::Function cineq1_min_func("cineq1_min_func", {U, p_c_x_min, p_c_y_min},                             {cineq1_min});
+    casadi::Function cineq2_max_func("cineq2_max_func", {U, p_c_x_max, p_c_y_max},                             {cineq2_max});
+    casadi::Function cineq2_min_func("cineq2_min_func", {U, p_c_x_min, p_c_y_min},                             {cineq2_min});
+    casadi::Function cineq3_max_func("cineq3_max_func", {U, dU_x_max, dU_y_max},                               {cineq3_max});
+    casadi::Function cineq3_min_func("cineq3_min_func", {U, dU_x_min, dU_y_min},                               {cineq3_min});
+    casadi::Function cineq4_max_func("cineq4_max_func", {U, M},                                                {cineq4_max});
+    casadi::Function cineq4_min_func("cineq4_min_func", {U, M},                                                {cineq4_min});
+    casadi::Function cineq5_max_func("cineq5_max_func", {U, dT_max},                                           {cineq5_max});
+    casadi::Function cineq5_min_func("cineq5_min_func", {U, dT_min},                                           {cineq5_min});
+    casadi::Function cineq6_max_func("cineq6_max_func", {U, V_x_max, V_y_max, dU_x_prev, dU_y_prev, dt},       {cineq6_max});
+    casadi::Function cineq6_min_func("cineq6_min_func", {U, V_x_min, V_y_min, dU_x_prev, dU_y_prev, dt},       {cineq6_min});
+    casadi::Function cineq7_max_func("cineq7_max_func", {U, p_c_x_max, p_c_y_max, t_step, T_step_ref_horizon}, {cineq7_max});
+    casadi::Function cineq7_min_func("cineq7_min_func", {U, p_c_x_min, p_c_y_min, t_step, T_step_ref_horizon}, {cineq7_min});
 
-    casadi::Function cineq1_max_v_func("cineq1_max_v_func",{U, p_c_x_max, p_c_y_max},                                     {cineq1_max_v});
-    casadi::Function cineq1_min_v_func("cineq1_min_v_func",{U, p_c_x_min, p_c_y_min},                                     {cineq1_min_v});
-    casadi::Function cineq2_max_v_func("cineq2_max_v_func",{U, p_c_x_max, p_c_y_max},                                     {cineq2_max_v});
-    casadi::Function cineq2_min_v_func("cineq2_min_v_func",{U, p_c_x_min, p_c_y_min},                                     {cineq2_min_v});
-    casadi::Function cineq3_max_v_func("cineq3_max_v_func",{U, dU_x_max, dU_y_max},                                       {cineq3_max_v});
-    casadi::Function cineq3_min_v_func("cineq3_min_v_func",{U, dU_x_min, dU_y_min},                                       {cineq3_min_v});
-    casadi::Function cineq4_max_v_func("cineq4_max_v_func",{U, dT_max},                                                   {cineq4_max_v});
-    casadi::Function cineq4_min_v_func("cineq4_min_v_func",{U, dT_min},                                                   {cineq4_min_v});
-    casadi::Function cineq5_max_v_func("cineq5_max_v_func",{U, V_x_max, V_y_max, dU_x_prev_thread, dU_y_prev_thread, dt}, {cineq5_max_v});
-    casadi::Function cineq5_min_v_func("cineq5_min_v_func",{U, V_x_min, V_y_min, dU_x_prev_thread, dU_y_prev_thread, dt}, {cineq5_min_v});
+    casadi::Function cineq1_max_v_func("cineq1_max_v_func", {U, p_c_x_max, p_c_y_max},                             {cineq1_max_v});
+    casadi::Function cineq1_min_v_func("cineq1_min_v_func", {U, p_c_x_min, p_c_y_min},                             {cineq1_min_v});
+    casadi::Function cineq2_max_v_func("cineq2_max_v_func", {U, p_c_x_max, p_c_y_max},                             {cineq2_max_v});
+    casadi::Function cineq2_min_v_func("cineq2_min_v_func", {U, p_c_x_min, p_c_y_min},                             {cineq2_min_v});
+    casadi::Function cineq3_max_v_func("cineq3_max_v_func", {U, dU_x_max, dU_y_max},                               {cineq3_max_v});
+    casadi::Function cineq3_min_v_func("cineq3_min_v_func", {U, dU_x_min, dU_y_min},                               {cineq3_min_v});
+    casadi::Function cineq4_max_v_func("cineq4_max_v_func", {U, M},                                                {cineq4_max_v});
+    casadi::Function cineq4_min_v_func("cineq4_min_v_func", {U, M},                                                {cineq4_min_v});
+    casadi::Function cineq5_max_v_func("cineq5_max_v_func", {U, dT_max},                                           {cineq5_max_v});
+    casadi::Function cineq5_min_v_func("cineq5_min_v_func", {U, dT_min},                                           {cineq5_min_v});
+    casadi::Function cineq6_max_v_func("cineq6_max_v_func", {U, V_x_max, V_y_max, dU_x_prev, dU_y_prev, dt},       {cineq6_max_v});
+    casadi::Function cineq6_min_v_func("cineq6_min_v_func", {U, V_x_min, V_y_min, dU_x_prev, dU_y_prev, dt},       {cineq6_min_v});
+    casadi::Function cineq7_max_v_func("cineq7_max_v_func", {U, p_c_x_max, p_c_y_max, t_step, T_step_ref_horizon}, {cineq7_max_v});
+    casadi::Function cineq7_min_v_func("cineq7_min_v_func", {U, p_c_x_min, p_c_y_min, t_step, T_step_ref_horizon}, {cineq7_min_v});
 
     /////////////////////////
     // Function Generation //
@@ -22252,8 +22278,10 @@ void AvatarController::CasADiFunctionGeneration()
     myCodeGen.add(J_v_func);
     myCodeGen.add(J_vv_func);
 
-    myCodeGen.add(ceq0_func);
-    myCodeGen.add(ceq0_v_func);
+    myCodeGen.add(ceq1_func);
+    myCodeGen.add(ceq1_v_func);
+    myCodeGen.add(ceq2_func);
+    myCodeGen.add(ceq2_v_func);
 
     myCodeGen.add(cineq1_max_func);
     myCodeGen.add(cineq1_min_func);
@@ -22265,6 +22293,10 @@ void AvatarController::CasADiFunctionGeneration()
     myCodeGen.add(cineq4_min_func);
     myCodeGen.add(cineq5_max_func);
     myCodeGen.add(cineq5_min_func);
+    myCodeGen.add(cineq6_max_func);
+    myCodeGen.add(cineq6_min_func);
+    myCodeGen.add(cineq7_max_func);
+    myCodeGen.add(cineq7_min_func);
 
     myCodeGen.add(cineq1_max_v_func);
     myCodeGen.add(cineq1_min_v_func);
@@ -22276,6 +22308,11 @@ void AvatarController::CasADiFunctionGeneration()
     myCodeGen.add(cineq4_min_v_func);
     myCodeGen.add(cineq5_max_v_func);
     myCodeGen.add(cineq5_min_v_func);
+    myCodeGen.add(cineq6_max_v_func);
+    myCodeGen.add(cineq6_min_v_func);   
+    myCodeGen.add(cineq7_max_v_func);
+    myCodeGen.add(cineq7_min_v_func);
+
     myCodeGen.generate(prefix_code);
 
     // compile c code to a shared library
@@ -22295,10 +22332,9 @@ void AvatarController::CasADiFunctionGeneration()
     
     std::cout << "Hessian and Gradient are successfully generated in the rd_.tc_.mode == 10" << std::endl;
     std::cout << "Time for function generation code is " << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << std::endl;
-
 }
 
-void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA)
+void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time)
 {   
     ///////////
     // START //
@@ -22308,57 +22344,11 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     // Parameter Setting //
     const int state_length = nmpc.state_length;
     const int input_length = nmpc.input_length;
-    const int total_num_constraint = nmpc.total_num_constraint;
     const int n_phi = nmpc.n_phi;
+
+    const int total_num_constraint = nmpc.total_num_constraint;
     const int dt_MPC = 1.0 / 50.0;  // 50 Hz
-
-    double m = rd_.link_[COM_id].mass;  // [kg]
-    double g = GRAVITY;                 // [m/s^2]
-    double h = com_height_;             // [m]
-    double w = sqrt(g / h);             // [rad/s]
-    double b = 1 / w;
-
-    double T_dsp_ref = (t_rest_init_ + t_double1_ + t_double2_ + t_rest_last_) / hz_;
-    double T_ssp_ref = t_total_const_ / hz_ - T_dsp_ref;
-    double stepping_current_time = 0.0;
-
-    int mpc_tick = walking_tick_mj_mpc_ - zmp_start_time_mj_mpc_;
-
-    if(is_dsp1_mpc == true) {stepping_current_time = mpc_tick;}
-    else if (is_ssp_mpc == true) {stepping_current_time = mpc_tick - (t_rest_init_ + t_double1_);} 
-    else if (is_dsp2_mpc == true) {stepping_current_time = mpc_tick + (t_rest_last_ + t_double2_) - t_total_const_;} 
-    
-    ///////////////////
-    // Reference DCM //
-    Eigen::VectorXd T_step_ref_horizon; T_step_ref_horizon.setZero(n_phi);
-    Eigen::MatrixXd xi_ref_horizon;     xi_ref_horizon.setZero(state_length, n_phi);
-    Eigen::MatrixXd p_init_ref_horizon; p_init_ref_horizon.setZero(state_length, n_phi);
-    Eigen::MatrixXd p_end_ref_horizon;  p_end_ref_horizon.setZero(state_length, n_phi);
-
-    if(is_dsp1_mpc == true || is_dsp2_mpc == true)
-    {
-        for (int i = 0; i < n_phi; i++){
-            if(i % 2 == 0){
-                T_step_ref_horizon(i) = T_dsp_ref;
-            }
-            else{
-                T_step_ref_horizon(i) = T_ssp_ref;
-            }
-        }
-    }
-    else if(is_ssp_mpc == true)
-    {
-        for (int i = 0; i < n_phi; i++){
-            if(i % 2 == 0){
-                T_step_ref_horizon(i) = T_ssp_ref;
-            }
-            else{
-                T_step_ref_horizon(i) = T_dsp_ref;
-            }
-        }
-    }
-
-    refernceWindow(xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, b);
+    double b = 1 / wn_;
 
     Eigen::Vector2d xi_ref; xi_ref.setZero();   xi_ref(0) = xi_ref_horizon(0,0); xi_ref(1) = xi_ref_horizon(1,0); 
     Eigen::Vector2d xi;     xi.setZero();       xi = cp_measured_mpc_; 
@@ -22370,10 +22360,10 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     casadi::Function J_v  = casadi::external("J_v_func", lib_full_name);
     casadi::Function J_vv = casadi::external("J_vv_func", lib_full_name);
 
-    casadi::Function ceq0 = casadi::external("ceq0_func", lib_full_name);
-    casadi::Function ceq1 = casadi::external("ceq1_func", lib_full_name);
-    casadi::Function ceq0_v = casadi::external("ceq0_v_func", lib_full_name);
+    casadi::Function ceq1   = casadi::external("ceq1_func", lib_full_name);
     casadi::Function ceq1_v = casadi::external("ceq1_v_func", lib_full_name);
+    casadi::Function ceq2   = casadi::external("ceq2_func", lib_full_name);
+    casadi::Function ceq2_v = casadi::external("ceq2_v_func", lib_full_name);
 
     casadi::Function cineq1_max = casadi::external("cineq1_max_func", lib_full_name);
     casadi::Function cineq1_min = casadi::external("cineq1_min_func", lib_full_name);
@@ -22385,6 +22375,10 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     casadi::Function cineq4_min = casadi::external("cineq4_min_func", lib_full_name);
     casadi::Function cineq5_max = casadi::external("cineq5_max_func", lib_full_name);
     casadi::Function cineq5_min = casadi::external("cineq5_min_func", lib_full_name);
+    casadi::Function cineq6_max = casadi::external("cineq6_max_func", lib_full_name);
+    casadi::Function cineq6_min = casadi::external("cineq6_min_func", lib_full_name);
+    casadi::Function cineq7_max = casadi::external("cineq7_max_func", lib_full_name);
+    casadi::Function cineq7_min = casadi::external("cineq7_min_func", lib_full_name);
 
     casadi::Function cineq1_max_v = casadi::external("cineq1_max_v_func", lib_full_name);
     casadi::Function cineq1_min_v = casadi::external("cineq1_min_v_func", lib_full_name);
@@ -22396,25 +22390,36 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     casadi::Function cineq4_min_v = casadi::external("cineq4_min_v_func", lib_full_name);
     casadi::Function cineq5_max_v = casadi::external("cineq5_max_v_func", lib_full_name);
     casadi::Function cineq5_min_v = casadi::external("cineq5_min_v_func", lib_full_name);
+    casadi::Function cineq6_max_v = casadi::external("cineq6_max_v_func", lib_full_name);
+    casadi::Function cineq6_min_v = casadi::external("cineq6_min_v_func", lib_full_name);
+    casadi::Function cineq7_max_v = casadi::external("cineq7_max_v_func", lib_full_name);
+    casadi::Function cineq7_min_v = casadi::external("cineq7_min_v_func", lib_full_name);
 
     //////////////////////////////////////
     // MPC Input (Eigen library vector) //
+    Eigen::VectorXd gain_state_horizon; gain_state_horizon.setZero(n_phi * state_length);
     Eigen::VectorXd gain_input_horizon; gain_input_horizon.setZero(n_phi * input_length);
     Eigen::VectorXd U; U.setZero(n_phi * input_length); 
+
     U = v;
 
     double w_dT        = w_nmpc[0];
 
+    double w_xi_err_x  = w_nmpc[1];
     double w_p_c_x     = w_nmpc[2];
     double w_dU_x      = w_nmpc[3];
     double w_db_x      = w_nmpc[4];
     
-    double w_p_c_y     = w_nmpc[7];
-    double w_dU_y      = w_nmpc[8];
-    double w_db_y      = w_nmpc[9];
+    double w_xi_err_y  = w_nmpc[5]; 
+    double w_p_c_y     = w_nmpc[6];
+    double w_dU_y      = w_nmpc[7];
+    double w_db_y      = w_nmpc[8];
 
     for (int i = 0; i < n_phi ; i++)
     {
+        gain_state_horizon(i*state_length + 0) = w_xi_err_x;
+        gain_state_horizon(i*state_length + 1) = w_xi_err_y;
+
         gain_input_horizon(i*input_length + 0) = w_p_c_x;
         gain_input_horizon(i*input_length + 1) = w_p_c_y;
         gain_input_horizon(i*input_length + 2) = w_p_c_x;
@@ -22444,9 +22449,11 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
         dU_y_max = nmpc.dU_y_max - lfoot_support_current_mpc_.translation()(1); // 0.1
         dU_y_min = nmpc.dU_y_min - lfoot_support_current_mpc_.translation()(1); //-0.03
     }
-    
+
     ////////////////////////////////////
     // Transform variables for solver //
+    casadi::DM dm_gain_state_horizon; EigenVectorToCasadiDM(dm_gain_state_horizon, gain_state_horizon, n_phi * state_length);
+
     casadi::DM dm_gain_input_horizon; EigenVectorToCasadiDM(dm_gain_input_horizon, gain_input_horizon, n_phi * input_length);
 
     casadi::DM dm_U; EigenVectorToCasadiDM(dm_U, U, n_phi * input_length);
@@ -22461,12 +22468,15 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
 
     casadi::DM dm_T_step_ref_horizon; EigenVectorToCasadiDM(dm_T_step_ref_horizon, T_step_ref_horizon, n_phi);
 
+    casadi::DM dm_big_M; EigenVectorToCasadiDM(dm_big_M, big_M, n_phi);
 
-    std::vector<casadi::DM> J_v_result  =   J_v(std::vector<casadi::DM>{dm_gain_input_horizon, dm_U});
-    std::vector<casadi::DM> J_vv_result =  J_vv(std::vector<casadi::DM>{dm_gain_input_horizon, dm_U});
+    std::vector<casadi::DM> J_v_result  =   J_v(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_U});
+    std::vector<casadi::DM> J_vv_result =  J_vv(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_U});
 
-    std::vector<casadi::DM> ceq0_result   =   ceq0(std::vector<casadi::DM>{dm_xi_err, dm_U, b, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
-    std::vector<casadi::DM> ceq0_v_result = ceq0_v(std::vector<casadi::DM>{dm_xi_err, dm_U, b, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> ceq1_result   =   ceq1(std::vector<casadi::DM>{dm_xi_err, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> ceq1_v_result = ceq1_v(std::vector<casadi::DM>{dm_xi_err, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> ceq2_result   =   ceq2(std::vector<casadi::DM>{dm_U});
+    std::vector<casadi::DM> ceq2_v_result = ceq2_v(std::vector<casadi::DM>{dm_U});
 
     std::vector<casadi::DM> cineq1_max_result = cineq1_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
     std::vector<casadi::DM> cineq1_min_result = cineq1_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
@@ -22474,10 +22484,14 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     std::vector<casadi::DM> cineq2_min_result = cineq2_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
     std::vector<casadi::DM> cineq3_max_result = cineq3_max(std::vector<casadi::DM>{dm_U, dU_x_max, dU_y_max});
     std::vector<casadi::DM> cineq3_min_result = cineq3_min(std::vector<casadi::DM>{dm_U, dU_x_min, dU_y_min});
-    std::vector<casadi::DM> cineq4_max_result = cineq4_max(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
-    std::vector<casadi::DM> cineq4_min_result = cineq4_min(std::vector<casadi::DM>{dm_U, nmpc.dT_min});
-    std::vector<casadi::DM> cineq5_max_result = cineq5_max(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq5_min_result = cineq5_min(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq4_max_result = cineq4_max(std::vector<casadi::DM>{dm_U, dm_big_M});
+    std::vector<casadi::DM> cineq4_min_result = cineq4_min(std::vector<casadi::DM>{dm_U, dm_big_M});
+    std::vector<casadi::DM> cineq5_max_result = cineq5_max(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
+    std::vector<casadi::DM> cineq5_min_result = cineq5_min(std::vector<casadi::DM>{dm_U, nmpc.dT_min});
+    std::vector<casadi::DM> cineq6_max_result = cineq6_max(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq6_min_result = cineq6_min(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq7_max_result = cineq7_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq7_min_result = cineq7_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
 
     std::vector<casadi::DM> cineq1_max_v_result = cineq1_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
     std::vector<casadi::DM> cineq1_min_v_result = cineq1_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
@@ -22485,10 +22499,14 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     std::vector<casadi::DM> cineq2_min_v_result = cineq2_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
     std::vector<casadi::DM> cineq3_max_v_result = cineq3_max_v(std::vector<casadi::DM>{dm_U, dU_x_max, dU_y_max});
     std::vector<casadi::DM> cineq3_min_v_result = cineq3_min_v(std::vector<casadi::DM>{dm_U, dU_x_min, dU_y_min});
-    std::vector<casadi::DM> cineq4_max_v_result = cineq4_max_v(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
-    std::vector<casadi::DM> cineq4_min_v_result = cineq4_min_v(std::vector<casadi::DM>{dm_U, nmpc.dT_min});
-    std::vector<casadi::DM> cineq5_max_v_result = cineq5_max_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq5_min_v_result = cineq5_min_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq4_max_v_result = cineq4_max_v(std::vector<casadi::DM>{dm_U, dm_big_M});
+    std::vector<casadi::DM> cineq4_min_v_result = cineq4_min_v(std::vector<casadi::DM>{dm_U, dm_big_M});
+    std::vector<casadi::DM> cineq5_max_v_result = cineq5_max_v(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
+    std::vector<casadi::DM> cineq5_min_v_result = cineq5_min_v(std::vector<casadi::DM>{dm_U, nmpc.dT_min});
+    std::vector<casadi::DM> cineq6_max_v_result = cineq6_max_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq6_min_v_result = cineq6_min_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, dU_x_prev, dU_y_prev, dt_MPC});
+    std::vector<casadi::DM> cineq7_max_v_result = cineq7_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq7_min_v_result = cineq7_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
 
     ////////////////////////////////////
     // Transform variables for qpOASES //
@@ -22500,53 +22518,80 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     p = CasadiDMVectorToEigenVector(J_v_result);
 
     // Equality constraints 
-    Eigen::MatrixXd A1;     A1.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA1; lbA1.setZero(state_length * n_phi);
-    Eigen::VectorXd ubA1; ubA1.setZero(state_length * n_phi);
-    A1 = CasadiDMVectorToEigenMatrix(ceq0_v_result);
-    lbA1 = (-1.0) * CasadiDMVectorToEigenVector(ceq0_result);
-    ubA1 = (-1.0) * CasadiDMVectorToEigenVector(ceq0_result);
+    Eigen::MatrixXd Aeq1;     Aeq1.setZero(state_length * n_phi, input_length * n_phi);
+    Eigen::VectorXd lbAeq1; lbAeq1.setZero(state_length * n_phi);
+    Eigen::VectorXd ubAeq1; ubAeq1.setZero(state_length * n_phi);
+    Aeq1 = CasadiDMVectorToEigenMatrix(ceq1_v_result);
+    lbAeq1 = (-1.0) * CasadiDMVectorToEigenVector(ceq1_result);
+    ubAeq1 = (-1.0) * CasadiDMVectorToEigenVector(ceq1_result);
+
+    Eigen::MatrixXd Aeq2;     Aeq2.setZero(state_length * (n_phi - 1), input_length * n_phi);
+    Eigen::VectorXd lbAeq2; lbAeq2.setZero(state_length * (n_phi - 1));
+    Eigen::VectorXd ubAeq2; ubAeq2.setZero(state_length * (n_phi - 1));
+    Aeq2 = CasadiDMVectorToEigenMatrix(ceq2_v_result);
+    lbAeq2 = (-1.0) * CasadiDMVectorToEigenVector(ceq2_result);
+    ubAeq2 = (-1.0) * CasadiDMVectorToEigenVector(ceq2_result);
 
     // Inequality constraints 
+    Eigen::MatrixXd A1;     A1.setZero(state_length * n_phi, input_length * n_phi);
+    Eigen::VectorXd lbA1; lbA1.setZero(state_length * n_phi); 
+    Eigen::VectorXd ubA1; ubA1.setZero(state_length * n_phi);
+    A1 = CasadiDMVectorToEigenMatrix(cineq1_max_v_result);
+    lbA1 = (+1.0) * CasadiDMVectorToEigenVector(cineq1_min_result);
+    ubA1 = (-1.0) * CasadiDMVectorToEigenVector(cineq1_max_result);
+
     Eigen::MatrixXd A2;     A2.setZero(state_length * n_phi, input_length * n_phi);
     Eigen::VectorXd lbA2; lbA2.setZero(state_length * n_phi); 
     Eigen::VectorXd ubA2; ubA2.setZero(state_length * n_phi);
-    A2 = CasadiDMVectorToEigenMatrix(cineq1_max_v_result);
-    lbA2 = (+1.0) * CasadiDMVectorToEigenVector(cineq1_min_result);
-    ubA2 = (-1.0) * CasadiDMVectorToEigenVector(cineq1_max_result);
+    A2= CasadiDMVectorToEigenMatrix(cineq2_max_v_result);
+    lbA2 = (+1.0) * CasadiDMVectorToEigenVector(cineq2_min_result);
+    ubA2 = (-1.0) * CasadiDMVectorToEigenVector(cineq2_max_result);
 
     Eigen::MatrixXd A3;     A3.setZero(state_length * n_phi, input_length * n_phi);
     Eigen::VectorXd lbA3; lbA3.setZero(state_length * n_phi); 
     Eigen::VectorXd ubA3; ubA3.setZero(state_length * n_phi);
-    A3 = CasadiDMVectorToEigenMatrix(cineq2_max_v_result);
-    lbA3 = (+1.0) * CasadiDMVectorToEigenVector(cineq2_min_result);
-    ubA3 = (-1.0) * CasadiDMVectorToEigenVector(cineq2_max_result);
+    A3 = CasadiDMVectorToEigenMatrix(cineq3_max_v_result);
+    lbA3 = (+1.0) * CasadiDMVectorToEigenVector(cineq3_min_result);
+    ubA3 = (-1.0) * CasadiDMVectorToEigenVector(cineq3_max_result);
 
     Eigen::MatrixXd A4;     A4.setZero(state_length * n_phi, input_length * n_phi);
     Eigen::VectorXd lbA4; lbA4.setZero(state_length * n_phi); 
     Eigen::VectorXd ubA4; ubA4.setZero(state_length * n_phi);
-    A4 = CasadiDMVectorToEigenMatrix(cineq3_max_v_result);
-    lbA4 = (+1.0) * CasadiDMVectorToEigenVector(cineq3_min_result);
-    ubA4 = (-1.0) * CasadiDMVectorToEigenVector(cineq3_max_result);
+    A4 = CasadiDMVectorToEigenMatrix(cineq4_max_v_result);
+    lbA4 = (+1.0) * CasadiDMVectorToEigenVector(cineq4_min_result);
+    ubA4 = (-1.0) * CasadiDMVectorToEigenVector(cineq4_max_result);
 
     Eigen::MatrixXd A5;     A5.setZero(n_phi, input_length * n_phi);
     Eigen::VectorXd lbA5; lbA5.setZero(n_phi); 
     Eigen::VectorXd ubA5; ubA5.setZero(n_phi);
-    A5 = CasadiDMVectorToEigenMatrix(cineq4_max_v_result);
-    lbA5 = (+1.0) * CasadiDMVectorToEigenVector(cineq4_min_result);
-    ubA5 = (-1.0) * CasadiDMVectorToEigenVector(cineq4_max_result);
+    A5 = CasadiDMVectorToEigenMatrix(cineq5_max_v_result);
+    lbA5 = (+1.0) * CasadiDMVectorToEigenVector(cineq5_min_result);
+    ubA5 = (-1.0) * CasadiDMVectorToEigenVector(cineq5_max_result);
+    
+    Eigen::MatrixXd A6;     A6.setZero(2, input_length * n_phi);
+    Eigen::VectorXd lbA6; lbA6.setZero(2); 
+    Eigen::VectorXd ubA6; ubA6.setZero(2);
+    A6 = CasadiDMVectorToEigenMatrix(cineq6_max_v_result);
+    lbA6 = (+1.0) * CasadiDMVectorToEigenVector(cineq6_min_result);
+    ubA6 = (-1.0) * CasadiDMVectorToEigenVector(cineq6_max_result);
 
-    Eigen::MatrixXd A6;     A6.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA6; lbA6.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA6; ubA6.setZero(state_length * n_phi);
-    A6 = CasadiDMVectorToEigenMatrix(cineq5_max_v_result);
-    lbA6 = (+1.0) * CasadiDMVectorToEigenVector(cineq5_min_result);
-    ubA6 = (-1.0) * CasadiDMVectorToEigenVector(cineq5_max_result);
+    Eigen::MatrixXd A7;     A7.setZero(state_length * n_phi, input_length * n_phi);
+    Eigen::VectorXd lbA7; lbA7.setZero(state_length * n_phi); 
+    Eigen::VectorXd ubA7; ubA7.setZero(state_length * n_phi);
+    A7 = CasadiDMVectorToEigenMatrix(cineq7_max_v_result);
+    lbA7 = (+1.0) * CasadiDMVectorToEigenVector(cineq7_min_result);
+    ubA7 = (-1.0) * CasadiDMVectorToEigenVector(cineq7_max_result);
 
     int stack_cnt = 0;
-    A.setZero(total_num_constraint * n_phi, input_length * n_phi);
-    lbA.setZero(total_num_constraint * n_phi);
-    ubA.setZero(total_num_constraint * n_phi);
+    // (***) TODO: Build constraint matrix.
+    A.setZero(total_num_constraint, input_length * n_phi);
+    lbA.setZero(total_num_constraint);
+    ubA.setZero(total_num_constraint);
+
+    A.block(stack_cnt * n_phi, 0,  state_length * n_phi, input_length * n_phi) = Aeq1;
+    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbAeq1;
+    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubAeq1;
+    stack_cnt = stack_cnt + 2;
 
     A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A1;
     lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA1;
@@ -22556,6 +22601,11 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A2;
     lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA2;
     ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA2;
+    stack_cnt = stack_cnt + 2;
+
+    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A7;
+    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA7;
+    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA7;
     stack_cnt = stack_cnt + 2;
 
     A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A3;
@@ -22573,247 +22623,238 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     ubA.segment(stack_cnt * n_phi, n_phi) = ubA5;
     stack_cnt = stack_cnt + 1;
 
-    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A6;
-    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA6;
-    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA6;
+    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = Aeq2;
+    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbAeq2;
+    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubAeq2;
     stack_cnt = stack_cnt + 2;
 
-    // if(walking_tick_mj == 0)
-    // {
-    //     std::cout << "-------------------------------------------------------\n" << std::endl;
-    //     std::cout << "---------------------------A---------------------------\n" << std::endl;
-    //     std::cout << "-------------------------------------------------------\n" << std::endl;
-    //     std::cout << A << std::endl;
+    // A.block(stack_cnt * n_phi - state_length, 0,  state_length, input_length * n_phi) = A6;
+    // lbA.segment(stack_cnt * n_phi - state_length, state_length) = lbA6;
+    // ubA.segment(stack_cnt * n_phi - state_length, state_length) = ubA6;
 
-    //     std::cout << "---------------------------------------------------------\n" << std::endl;
-    //     std::cout << "---------------------------lbA---------------------------\n" << std::endl;
-    //     std::cout << "---------------------------------------------------------\n" << std::endl;
-    //     std::cout << lbA << std::endl;
+    if(is_save_init_ == true){
 
-    //     std::cout << "---------------------------------------------------------\n" << std::endl;
-    //     std::cout << "---------------------------ubA---------------------------\n" << std::endl;
-    //     std::cout << "---------------------------------------------------------\n" << std::endl;
-    //     std::cout << ubA << std::endl;
-    // }
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------Q---------------------------\n" << std::endl;
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << Q << std::endl;
+
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------p---------------------------\n" << std::endl;
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << p << std::endl;
+
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------A---------------------------\n" << std::endl;
+        KW_graph10 << "-------------------------------------------------------\n" << std::endl;
+        KW_graph10 << A << std::endl;
+
+        KW_graph10 << "---------------------------------------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------lbA---------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------------------------------------\n" << std::endl;
+        KW_graph10 << lbA << std::endl;
+
+        KW_graph10 << "---------------------------------------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------ubA---------------------------\n" << std::endl;
+        KW_graph10 << "---------------------------------------------------------\n" << std::endl;
+        std::cout << ubA << std::endl;
+
+        is_save_init_ = false;
+    }
 
     // END //
     /////////
 }
 
-void AvatarController::refernceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, double b)
+void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, Eigen::VectorXd &big_M, const double &transition_phase_current_time)
 {
-    int mpc_tick = walking_tick_mj_mpc_ - zmp_start_time_mj_mpc_;
-    int N = 125;
-    int MPC_sync_hz = 40;
-    double T_dsp1_ref = t_rest_init_ + t_double1_;               double T_dsp1_sync = T_dsp1_ref / MPC_sync_hz;
-    double T_dsp2_ref = t_double2_ + t_rest_last_;               double T_dsp2_sync = T_dsp2_ref / MPC_sync_hz;
-    double T_dsp_ref  = T_dsp1_ref + T_dsp2_ref;                 double T_dsp_sync  = T_dsp1_sync + T_dsp2_sync;
-    double T_ssp_ref = t_total_const_ - T_dsp1_ref - T_dsp2_ref; double T_ssp_sync  = T_ssp_ref / MPC_sync_hz;
     DyrosContactScheduler nmpc; 
+    
+    int mpc_tick = walking_tick_mj_mpc_ - zmp_start_time_mj_mpc_;
+    int mpc_hz = 50;
+    int MPC_sync_hz = hz_ / mpc_hz;
 
-    Eigen::VectorXd x_dcm_MPC, y_dcm_MPC;
-    x_dcm_MPC.setZero(N); y_dcm_MPC.setZero(N);
+    double T_dsp_ref = (t_rest_init_ + t_double1_ + t_double2_ + t_rest_last_) / hz_;
+    double T_ssp_ref = t_total_const_ / hz_ - T_dsp_ref;
+
+    int transition_phase_start_time = 0;
+    if(is_dsp2_mpc == true) {transition_phase_start_time = t_total_mpc_ - (t_rest_last_ + t_double2_);} 
+    if(is_ssp_mpc == true)  {transition_phase_start_time = t_rest_init_ + t_double1_;} 
+
+    double b = 1 / wn_;
+
+    // Step time reference
+    if(is_dsp1_mpc == true || is_dsp2_mpc == true)
+    {
+        for (int i = 0; i < nmpc.n_phi; i++){
+            if(i % 2 == 0){
+                T_step_ref_horizon(i) = T_dsp_ref;
+            }
+            else{
+                T_step_ref_horizon(i) = T_ssp_ref;
+            }
+        }
+    }
+    else if(is_ssp_mpc == true)
+    {
+        for (int i = 0; i < nmpc.n_phi; i++){
+            if(i % 2 == 0){
+                T_step_ref_horizon(i) = T_ssp_ref;
+            }
+            else{
+                T_step_ref_horizon(i) = T_dsp_ref;
+            }
+        }
+    }
+    
+    int N = 0;
+    for (int i = 0; i < nmpc.n_phi; i++){N += T_step_ref_horizon(i) * mpc_hz;}
+
+    // From ZMP Planner & Wieber MPC
+    Eigen::VectorXd x_zmp_MPC, y_zmp_MPC, x_dcm_MPC, y_dcm_MPC;
+    x_zmp_MPC.setZero(N); y_zmp_MPC.setZero(N); x_dcm_MPC.setZero(N); y_dcm_MPC.setZero(N);
+
+    x_zmp_MPC = zx_ref.segment(0, N);
+    y_zmp_MPC = zy_ref.segment(0, N);
+
     x_dcm_MPC = x_com_pos_recur_.segment(0, N) + x_com_vel_recur_.segment(0, N) * b;
-    y_dcm_MPC = x_com_pos_recur_.segment(0, N) + y_com_vel_recur_.segment(0, N) * b;
+    y_dcm_MPC = y_com_pos_recur_.segment(0, N) + y_com_vel_recur_.segment(0, N) * b;
+
+    // DCM reference
+    int T_remain = (T_step_ref_horizon(0) - transition_phase_current_time) * mpc_hz;
+
+    int T_horizon = T_remain;
+    for(int i = 0; i < nmpc.n_phi; i++){
+        if(i == 0){ 
+            xi_ref_horizon(0, i) = x_dcm_MPC(0);
+            xi_ref_horizon(1, i) = y_dcm_MPC(0);
+        }
+        else if(i == 1){
+            xi_ref_horizon(0, i) = x_dcm_MPC(T_horizon);
+            xi_ref_horizon(1, i) = y_dcm_MPC(T_horizon);
+        }
+        else{
+            T_horizon += T_step_ref_horizon(i-1) * mpc_hz;
+            xi_ref_horizon(0, i) = x_dcm_MPC(T_horizon);
+            xi_ref_horizon(1, i) = y_dcm_MPC(T_horizon);
+        }
+    }
+    
+    // VRP reference
+    int is_step_checker = 0;
+    if(is_left_foot_support_mpc == true){is_step_checker = 1;}
+    else if(is_right_foot_support_mpc == true){is_step_checker = 0;}
 
     if(is_dsp1_mpc == true){
-        double T_remain = (T_dsp1_ref - mpc_tick) / MPC_sync_hz; 
-        // DCM
-        int j = 0;
-        int k = 0;
+        int T_horizon = T_remain;
+
         for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){
-                xi_ref_horizon(0, i) = x_dcm_MPC(0);
-                xi_ref_horizon(1, i) = y_dcm_MPC(0);
-            }
-            else if (i == 1){
-                xi_ref_horizon(0, i) = x_dcm_MPC(T_remain);
-                xi_ref_horizon(1, i) = y_dcm_MPC(T_remain);
+            if(i == 0){ 
+                p_init_ref_horizon(0, i) = foot_step_support_frame_mpc(current_step_num_mpc_ - 2, 0) - m_del_zmp_x_mpc(current_step_num_mpc_ - 1, is_step_checker) + foot_step_support_frame_mpc(current_step_num_mpc_ - 1, 0);                     
+                p_init_ref_horizon(1, i) = foot_step_support_frame_mpc(current_step_num_mpc_ - 2, 1) - m_del_zmp_x_mpc(current_step_num_mpc_ - 1, is_step_checker) + foot_step_support_frame_mpc(current_step_num_mpc_ - 1, 1);                     
+
+                p_end_ref_horizon(0, i)  = x_zmp_MPC(T_horizon);
+                p_end_ref_horizon(1, i)  = y_zmp_MPC(T_horizon);
             }
             else{
-                if(i % 2 == 0){     // 2, 4, 6, ...
-                    j++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-                else{               // 3, 5, 7, ...
-                    k++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-            }
-        }
 
-        // VRP
-        j = 0;
-        k = 0;
-        for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){ // DSP
-                p_init_ref_horizon(0, i) = foot_step_support_frame_(current_step_num_mpc_ - 2, 0);                     
-                p_init_ref_horizon(1, i) = foot_step_support_frame_(current_step_num_mpc_ - 2, 1);
+                p_init_ref_horizon(0, i) = x_zmp_MPC(T_horizon);                     
+                p_init_ref_horizon(1, i) = y_zmp_MPC(T_horizon);
 
-                p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref, 0);
-                p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref, 1);
-            }
-            else{
-                if(i % 2 == 0){     // DSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 0);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 1);
-                    
-                    k++;
+                T_horizon += T_step_ref_horizon(i) * mpc_hz;
 
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 0);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 1);
-                }
-                else{               // SSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 0);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 1);
-                    
-                    j++;
+                p_end_ref_horizon(0, i)  = x_zmp_MPC(T_horizon);
+                p_end_ref_horizon(1, i)  = y_zmp_MPC(T_horizon);
 
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 0);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + j * T_ssp_ref + k * T_dsp_ref, 1);
-                }
             }
         }
     }
-    else if (is_dsp2_mpc == true){
-        double T_remain = (T_dsp1_ref + T_ssp_ref + T_dsp_ref - mpc_tick) / MPC_sync_hz; 
-        // DCM
-        int j = 0;
-        int k = 0;
+    else if (is_dsp2_mpc == true || is_ssp_mpc == true){
+        int T_horizon = T_remain;
+
         for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){
-                xi_ref_horizon(0, i) = x_dcm_MPC(0);
-                xi_ref_horizon(1, i) = y_dcm_MPC(0);
-            }
-            else if (i == 1){
-                xi_ref_horizon(0, i) = x_dcm_MPC(T_remain);
-                xi_ref_horizon(1, i) = y_dcm_MPC(T_remain);
+            if(i == 0){ 
+                p_init_ref_horizon(0, i) = ref_zmp_mpc_(transition_phase_start_time, 0);                     
+                p_init_ref_horizon(1, i) = ref_zmp_mpc_(transition_phase_start_time, 1);                     
+
+                p_end_ref_horizon(0, i)  = x_zmp_MPC(T_horizon);
+                p_end_ref_horizon(1, i)  = y_zmp_MPC(T_horizon);
             }
             else{
-                if(i % 2 == 0){     // 2, 4, 6, ...
-                    j++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-                else{               // 3, 5, 7, ...
-                    k++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-            }
-        }
 
-        // VRP
-        j = 0;
-        k = 0;
-        for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){ // DSP
-                p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref);                     
-                p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref);
+                p_init_ref_horizon(0, i) = x_zmp_MPC(T_horizon);                     
+                p_init_ref_horizon(1, i) = y_zmp_MPC(T_horizon);
 
-                p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref, 0);
-                p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref, 1);
-            }
-            else{
-                if(i % 2 == 0){     // DSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    
-                    k++;
+                T_horizon += T_step_ref_horizon(i) * mpc_hz;
 
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                }
-                else{               // SSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    
-                    j++;
+                p_end_ref_horizon(0, i)  = x_zmp_MPC(T_horizon);
+                p_end_ref_horizon(1, i)  = y_zmp_MPC(T_horizon);
 
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + T_dsp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                }
             }
         }
     }
-    else if (is_ssp_mpc == true){
-        double T_remain = (T_dsp1_ref + T_ssp_ref - mpc_tick) / MPC_sync_hz; 
-        // DCM
-        int j = 0;
-        int k = 0;
-        for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){
-                xi_ref_horizon(0, i) = x_dcm_MPC(0);
-                xi_ref_horizon(1, i) = y_dcm_MPC(0);
-            }
-            else if (i == 1){
-                xi_ref_horizon(0, i) = x_dcm_MPC(T_remain);
-                xi_ref_horizon(1, i) = y_dcm_MPC(T_remain);
+
+    if(is_dsp1_mpc == true || is_dsp2_mpc == true)
+    {
+        for (int i = 0; i < nmpc.n_phi; i++){
+            if(i % 2 == 0){
+                big_M(i) = 0.0;     
             }
             else{
-                if(i % 2 == 0){     // 2, 4, 6, ...
-                    k++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-                else{               // 3, 5, 7, ...
-                    j++;
-                    xi_ref_horizon(0, i) = x_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                    xi_ref_horizon(1, i) = y_dcm_MPC(T_remain + j * T_ssp_sync + k * T_dsp_sync);
-                }
-            }
-        }
-
-        // VRP
-        j = 0;
-        k = 0;
-        for(int i = 0; i < nmpc.n_phi; i++){
-            if(i == 0){ // SSP
-                p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref);                     
-                p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref);
-
-                p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref, 0);
-                p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref, 1);
-            }
-            else{
-                if(i % 2 == 0){     // SSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    
-                    j++;
-
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                }
-                else{               // DSP
-                    p_init_ref_horizon(0, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);                   
-                    p_init_ref_horizon(1, i) = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    
-                    k++;
-
-                    p_end_ref_horizon(0, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                    p_end_ref_horizon(1, i)  = ref_zmp_mpc_(T_dsp1_ref + T_ssp_ref + j * T_ssp_ref + k * T_dsp_ref);
-                }
+                big_M(i) = 1.0;
             }
         }
     }
+    else if(is_ssp_mpc == true)
+    {
+        for (int i = 0; i < nmpc.n_phi; i++){
+            if(i % 2 == 0){
+                big_M(i) = 1.0; 
+            }
+            else{
+                big_M(i) = 0.0;
+            }
+        }
+    }
+
+    KW_graph5_1 << x_com_pos_recur_.transpose() << std::endl;
+    KW_graph5_2 << y_com_pos_recur_.transpose() << std::endl;
+    KW_graph5_3 << zx_ref.transpose() << std::endl;
+    KW_graph5_4 << zy_ref.transpose() << std::endl;
+    KW_graph5_5 <<(x_com_pos_recur_ + x_com_vel_recur_ * b).transpose() << std::endl;
+    KW_graph5_6 <<(y_com_pos_recur_ + y_com_vel_recur_ * b).transpose() << std::endl;
+    
+    KW_graph7_1 << xi_ref_horizon.block(0, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_2 << xi_ref_horizon.block(1, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_3 << p_init_ref_horizon.block(0, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_4 << p_init_ref_horizon.block(1, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_5 << p_end_ref_horizon.block(0, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_6 << p_end_ref_horizon.block(1, 0, 1, nmpc.n_phi) << std::endl;
+    KW_graph7_7 << T_step_ref_horizon.transpose() << " " << mpc_tick << " " << current_step_num_mpc_ << " " << total_step_num_mpc_ << std::endl;
+
+    T_horizon = T_remain;
+    KW_graph8 << 0 << " " << T_horizon << " ";
+    for (int i = 1; i < nmpc.n_phi - 1; i++){
+        T_horizon += T_step_ref_horizon(i) * mpc_hz;
+        KW_graph8 << T_horizon << " ";
+    }
+    KW_graph8 << std::endl;
+    KW_graph9 << big_M.transpose() << std::endl;
 }
 
-void AvatarController::EigenMatrixToCasadiDM(casadi::DM &casadi_dm, Eigen::MatrixXd eigen_matrix, int col, int row)
+void AvatarController::EigenMatrixToCasadiDM(casadi::DM &casadi_dm, const Eigen::MatrixXd &eigen_matrix, int col, int row)
 {
     casadi_dm = casadi::DM::zeros(col, row);
     memcpy(casadi_dm.ptr(), eigen_matrix.data(), sizeof(double) * col * row);
 }
 
-void AvatarController::EigenVectorToCasadiDM(casadi::DM &casadi_dm, Eigen::VectorXd eigen_vector, int length)
+void AvatarController::EigenVectorToCasadiDM(casadi::DM &casadi_dm, const Eigen::VectorXd &eigen_vector, int length)
 {
     casadi_dm = casadi::DM::zeros(length, 1);
     memcpy(casadi_dm.ptr(), eigen_vector.data(), sizeof(double) * length);
 }
 
-Eigen::MatrixXd AvatarController::CasadiDMVectorToEigenMatrix(std::vector<casadi::DM> casadi_dm_vector)
+Eigen::MatrixXd AvatarController::CasadiDMVectorToEigenMatrix(const std::vector<casadi::DM> &casadi_dm_vector)
 {
     casadi::DM Matrx = casadi_dm_vector.at(0);
     casadi::Sparsity SpA = Matrx.get_sparsity();
@@ -22834,7 +22875,7 @@ Eigen::MatrixXd AvatarController::CasadiDMVectorToEigenMatrix(std::vector<casadi
     return Eigen::MatrixXd(SpMatrx);
 }
 
-Eigen::VectorXd AvatarController::CasadiDMVectorToEigenVector(std::vector<casadi::DM> casadi_dm_vector)
+Eigen::VectorXd AvatarController::CasadiDMVectorToEigenVector(const std::vector<casadi::DM> &casadi_dm_vector)
 {
     casadi::DM Matrx = casadi_dm_vector.at(0);
     casadi::Sparsity SpA = Matrx.get_sparsity();
@@ -23094,6 +23135,6 @@ void AvatarController::getParameterYAML()
 
     // NMPC
     ros::param::get("/tocabi_controller/w_nmpc", w_nmpc);
-    for (int i = 0; i < 11; i++) { std::cout << "w_nmpc" << i << ": " << w_nmpc[i] << std::endl;}
+    for (int i = 0; i < 9; i++) { std::cout << "w_nmpc" << i << ": " << w_nmpc[i] << std::endl;}
 
 }

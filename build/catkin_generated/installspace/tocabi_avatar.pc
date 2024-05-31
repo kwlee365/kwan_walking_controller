@@ -1,0 +1,8 @@
+prefix=/usr/local
+
+Name: tocabi_avatar
+Description: Description of tocabi_avatar
+Version: 0.0.0
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib -ltocabi_avatar
+Requires: tocabi_lib tocabi_msgs
