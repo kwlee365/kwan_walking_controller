@@ -48,16 +48,16 @@ kv_force_zmp_ctrl : 3.0
 foot_height_diff_const_zmp_ctrl : 0.01
 
 # Nonlinear DCM MPC
-w_nmpc : [0.001,    # time 
+w_nmpc : [100,  # time 
 
-          0.001,    # w_xi_err_x
-          0.001,    # w_p_c_x
-          0.00001,  # w_dU_x
-          1.0,      # w_db_x
+          1,    # w_xi_err_x
+          1,    # w_p_c_x
+          0.1,    # w_dU_x
+          1000, # w_db_x
           
-          0.001,    # w_xi_err_y
-          0.001,    # w_p_c_y
-          0.00001,  # w_dU_y
-          1.0]      # w_db_y
+          1,    # w_xi_err_y
+          1,    # w_p_c_y
+          0.1,    # w_dU_y
+          1000] # w_db_y
 
 

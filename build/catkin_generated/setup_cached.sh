@@ -8,7 +8,9 @@
 
 # modified environment variables
 export CMAKE_PREFIX_PATH="/home/kwan/catkin_ws/src/tocabi_avatar/build/devel:$CMAKE_PREFIX_PATH"
-export PATH='/home/kwan/catkin_ws/devel/bin:/opt/ros/noetic/bin:/home/kwan/.local/bin:/home/kwan/bin:/home/kwan/.local/bin:/home/kwan/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'
+export LD_LIBRARY_PATH="/home/kwan/catkin_ws/src/tocabi_avatar/build/devel/lib:$LD_LIBRARY_PATH"
+export PATH="/home/kwan/catkin_ws/devel/bin:/opt/ros/noetic/bin:$PATH"
+export PKG_CONFIG_PATH="/home/kwan/catkin_ws/src/tocabi_avatar/build/devel/lib/pkgconfig:$PKG_CONFIG_PATH"
 export PWD='/home/kwan/catkin_ws/src/tocabi_avatar/build'
 export ROSLISP_PACKAGE_DIRECTORIES="/home/kwan/catkin_ws/src/tocabi_avatar/build/devel/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
 export ROS_PACKAGE_PATH="/home/kwan/catkin_ws/src/tocabi_avatar:$ROS_PACKAGE_PATH"

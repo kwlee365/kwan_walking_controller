@@ -1607,6 +1607,7 @@ public:
     double walking_end_flag = 0;
     
     Eigen::Isometry3d supportfoot_float_current_; 
+    Eigen::Isometry3d supportfoot_float_current_prev; 
 
     Eigen::Isometry3d pelv_support_current_;
     Eigen::Isometry3d pelv_support_current_fast_;
@@ -2359,7 +2360,8 @@ public:
 
         const int state_length = 2;
         const int input_length = 9;
-        const int total_num_constraint = 15 * n_phi;
+        const int step_constraint_num = 2;  // constraint about dU
+        const int total_num_constraint = 9 * n_phi + step_constraint_num;
 
         const int nmpc_ctrl_input_thread_num = 5;
 
@@ -2381,7 +2383,7 @@ public:
         double dU_x_min =-0.3;
         double dU_y_min = 0.25 - 0.03;
         double dT_max = 0.0;
-        double dT_min =-0.1;
+        double dT_min =-0.2;
         
         std::string current_path = std::filesystem::current_path().parent_path().string();
         std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/function/";   // The user should modify this variable your own directory.
