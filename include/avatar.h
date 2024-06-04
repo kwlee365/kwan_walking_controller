@@ -1688,12 +1688,24 @@ public:
     double t_double2_;
     double t_total_;
     double t_total_const_;
+    
     double t_total_thread_;
     double t_rest_init_thread_;
     double t_rest_last_thread_;
+    double t_double1_thread_;
+    double t_double2_thread_;
+    
     double t_total_mpc_;
     double t_rest_init_mpc_;
     double t_rest_last_mpc_;
+    double t_double1_mpc_;
+    double t_double2_mpc_;
+
+    double t_rest_init_const_;
+    double t_rest_last_const_;
+    double t_double1_const_;
+    double t_double2_const_;
+
     double foot_height_;
     int total_step_num_;
     int total_step_num_mpc_;
@@ -2354,25 +2366,25 @@ public:
     struct DyrosContactScheduler{
         // PARAM //
 
-        const int planning_step_number = 2;
+        const int planning_step_number = 1;
         const int n_phi = 2 * planning_step_number + 1;
         const int n_wp = n_phi + 1;
 
         const int state_length = 2;
         const int input_length = 9;
         const int step_constraint_num = 2;  // constraint about dU
-        const int total_num_constraint = 9 * n_phi + step_constraint_num;
+        const int total_num_constraint = 11 * n_phi + step_constraint_num;
 
-        const int nmpc_ctrl_input_thread_num = 5;
+        const int nmpc_ctrl_input_num = 5;
 
         // Robot (TOCABI) //
         double Foot_length = 0.3;
         double Foot_width  = 0.16;
 
-        double V_x_max = 10.0; double V_x_min = -10.0;
-        double V_y_max = 10.0; double V_y_min = -10.0;
+        double V_x_max = 1.0; double V_x_min = -1.0;
+        double V_y_max = 1.0; double V_y_min = -1.0;
 
-        double safety_factor = 0.5;
+        double safety_factor = 0.9;
         double p_c_x_max = safety_factor *( 0.5*Foot_length);
         double p_c_y_max = safety_factor *( 0.5*Foot_width);
         double p_c_x_min = safety_factor *(-0.5*Foot_length);
@@ -2383,7 +2395,7 @@ public:
         double dU_x_min =-0.3;
         double dU_y_min = 0.25 - 0.03;
         double dT_max = 0.0;
-        double dT_min =-0.2;
+        double dT_min =-0.10;
         
         std::string current_path = std::filesystem::current_path().parent_path().string();
         std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/function/";   // The user should modify this variable your own directory.
@@ -2403,6 +2415,11 @@ public:
 
     Eigen::VectorXd zx_ref;
     Eigen::VectorXd zy_ref;
+
+    double t_ssp = 0.0;
+    double t_ssp_const = 0.0;
+    double t_dsp = 0.0;
+    double t_dsp_const = 0.0;
     
 private:    
     //////////////////////////////// Myeong-Ju
