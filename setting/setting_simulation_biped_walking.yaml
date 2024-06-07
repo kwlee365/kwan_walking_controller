@@ -23,7 +23,7 @@ zmp_modif_time_margin : 0.1
 # impact simulation
 impact_timing      : 0.5
 impact_duration    : 0.2
-impact_force       : 300
+impact_force       : 0
 impact_theta       : 0      # -x :-90
                             # -y : 0 
                             #  y : 180

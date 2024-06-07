@@ -21318,18 +21318,18 @@ void AvatarController::dcmController_NMPC_DYROS()
     const int input_length         = nmpc.input_length;  
     const int total_num_constraint = nmpc.total_num_constraint;            
 
-    Eigen::VectorXd dv;   dv.setOnes(input_length * n_phi);  dv  = 1000.0 * dv;
-    Eigen::VectorXd dv_; dv_.setZero(input_length * n_phi);
+    Eigen::VectorXd dv;   dv.setOnes((state_length + input_length) * n_phi);  dv  = 1000.0 * dv;
+    Eigen::VectorXd dv_; dv_.setZero((state_length + input_length) * n_phi);
 
     Eigen::MatrixXd Q;  Eigen::VectorXd p; 
     Eigen::MatrixXd A;  Eigen::VectorXd lbA; Eigen::VectorXd ubA; 
 
     if(is_dcm_nmpc_init == true)
     {
-        SQP_NMPC_DCM_.InitializeProblemSize(input_length * n_phi, total_num_constraint);
+        SQP_NMPC_DCM_.InitializeProblemSize((state_length + input_length) * n_phi, total_num_constraint);
         std::cout << "NMPC Initialization Complete" << std::endl;
         
-        v_nmpc_.setZero(input_length * n_phi);
+        v_nmpc_.setZero((state_length + input_length) * n_phi);
         
         is_dcm_nmpc_init = false;
     } 
@@ -21338,18 +21338,13 @@ void AvatarController::dcmController_NMPC_DYROS()
     Eigen::MatrixXd xi_ref_horizon;     xi_ref_horizon.setZero(state_length, n_phi);
     Eigen::MatrixXd p_init_ref_horizon; p_init_ref_horizon.setZero(state_length, n_phi);
     Eigen::MatrixXd p_end_ref_horizon;  p_end_ref_horizon.setZero(state_length, n_phi);
-    Eigen::VectorXd big_M; big_M.setZero(n_phi); 
 
     double transition_phase_current_time = mpc_tick / hz_;
 
-    // if(walking_tick_mj_mpc_ == zmp_start_time_mj_mpc_){
-    //     v_nmpc_.setZero(input_length * n_phi);  // SSP에 줄어든 시간이 DSP 시간 변화에 Initial value를 제공해서 좋지 않은 결과가 나옴.
-    // }
-    
     int iter = 0;
     if(current_step_num_mpc_ >= 2 && (current_step_num_mpc_ != total_step_num_-1))
     {
-        referenceWindow(xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, big_M, transition_phase_current_time);
+        referenceWindow(xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, transition_phase_current_time);
 
         while (dv.norm() > 1.0)
         {
@@ -21361,7 +21356,7 @@ void AvatarController::dcmController_NMPC_DYROS()
             }
             else{is_iter_over = false;}
 
-            getGradHessDcm_NMPC_CasADi(v_nmpc_, Q, p, A, lbA, ubA, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, big_M, transition_phase_current_time);
+            getGradHessDcm_NMPC_CasADi(v_nmpc_, Q, p, A, lbA, ubA, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon, transition_phase_current_time);
 
             SQP_NMPC_DCM_.EnableEqualityCondition(equality_condition_eps_);
             SQP_NMPC_DCM_.UpdateMinProblem(Q, p);
@@ -21371,7 +21366,7 @@ void AvatarController::dcmController_NMPC_DYROS()
             int QP_iteration_num = 200; 
             if(SQP_NMPC_DCM_.SolveQPoases(QP_iteration_num, dv_))
             {   
-                dv = dv_.segment(0, input_length * n_phi);
+                dv = dv_.segment(0, (state_length + input_length) * n_phi);
 
                 nmpc_update_ = true;
             }
@@ -21386,7 +21381,7 @@ void AvatarController::dcmController_NMPC_DYROS()
             }
 
             static bool flag_NAN = false;
-            for (int i = 0; i < input_length * n_phi; i++)
+            for (int i = 0; i < (state_length + input_length) * n_phi; i++)
                 if (dv(i) != dv(i)){flag_NAN = true;}
             if (flag_NAN == true)
             {
@@ -21399,13 +21394,20 @@ void AvatarController::dcmController_NMPC_DYROS()
             iter = iter + 1;
         }
 
-        double vT_x = v_nmpc_(0);
-        double vT_y = v_nmpc_(1);
-        double v0_x = v_nmpc_(2);
-        double v0_y = v_nmpc_(3);
-        double u_x  = v_nmpc_(4);
-        double u_y  = v_nmpc_(5);
-        double T_new= T_step_ref_horizon(0) + v_nmpc_(8);
+        Eigen::VectorXd X_nmpc; X_nmpc.setZero(state_length * n_phi);
+        Eigen::VectorXd U_nmpc; U_nmpc.setZero(input_length * n_phi);
+
+        X_nmpc = v_nmpc_.segment(0,                    state_length * n_phi);
+        U_nmpc = v_nmpc_.segment(state_length * n_phi, input_length * n_phi);
+
+        double vT_x     = U_nmpc(0);
+        double vT_y     = U_nmpc(1);
+        double v0_x     = U_nmpc(2);
+        double v0_y     = U_nmpc(3);
+        double T_new= T_step_ref_horizon(0) + U_nmpc(4);
+
+        double dF_x     = U_nmpc(7);
+        double dF_y     = U_nmpc(8);
 
         double zmp_ctrl_x = (1 - transition_phase_current_time / T_new) * v0_x + transition_phase_current_time / T_new * vT_x;
         double zmp_ctrl_y = (1 - transition_phase_current_time / T_new) * v0_y + transition_phase_current_time / T_new * vT_y;
@@ -21414,10 +21416,7 @@ void AvatarController::dcmController_NMPC_DYROS()
         {
             atb_nmpc_update_ = true;
 
-            dU_x_prev = u_x;
-            dU_y_prev = u_y;
-
-            nmpc_ctrl_input_thread << zmp_ctrl_x, zmp_ctrl_y, u_x, u_y, v_nmpc_(8);
+            nmpc_ctrl_input_thread << zmp_ctrl_x, zmp_ctrl_y, dF_x, dF_y, v_nmpc_(6);
             current_step_num_thread2_ = current_step_num_mpc_;
 
             atb_nmpc_update_ = false;
@@ -21831,12 +21830,12 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX V_y_max = casadi::SX::sym("V_y_max");
     casadi::SX V_y_min = casadi::SX::sym("V_y_min");
 
-    casadi::SX dU_x_max = casadi::SX::sym("dU_x_max");
-    casadi::SX dU_x_min = casadi::SX::sym("dU_x_min");
-    casadi::SX dU_y_max = casadi::SX::sym("dU_y_max");
-    casadi::SX dU_y_min = casadi::SX::sym("dU_y_min");
-    casadi::SX dU_x_prev = casadi::SX::sym("dU_x_prev");
-    casadi::SX dU_y_prev = casadi::SX::sym("dU_y_prev");
+    casadi::SX dF_x_max = casadi::SX::sym("dF_x_max");
+    casadi::SX dF_x_min = casadi::SX::sym("dF_x_min");
+    casadi::SX dF_y_max = casadi::SX::sym("dF_y_max");
+    casadi::SX dF_y_min = casadi::SX::sym("dF_y_min");
+    casadi::SX dF_x_prev = casadi::SX::sym("dF_x_prev");
+    casadi::SX dF_y_prev = casadi::SX::sym("dF_y_prev");
 
     casadi::SX dT_max = casadi::SX::sym("dT_max");
     casadi::SX dT_min = casadi::SX::sym("dT_min", n_phi);
@@ -21846,52 +21845,42 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX p_end_ref_horizon  = casadi::SX::sym("p_end_ref_horizon",  state_length, n_phi);
     casadi::SX T_step_ref_horizon = casadi::SX::sym("T_step_ref_horizon", n_phi);
 
-    casadi::SX U = casadi::SX::sym("U", n_phi * input_length);
-    casadi::SX M = casadi::SX::sym("M", n_phi);     // Big M formulation
-
-    casadi::SX S = casadi::SX::zeros(2, 9);
-    S(0, 4) = 1; S(0, 6) = 1;
-    S(1, 5) = 1; S(1, 7) = 1;
-
-    casadi::SX J = mtimes(transpose(U), mtimes(diag(gain_input_horizon), U));
-    for (int i = 0; i < n_phi; i++){
-        casadi::SX u      = U(casadi::Slice(i * input_length, (i+1) * input_length, 1));
-        casadi::SX Q1     = diag(gain_state_horizon(casadi::Slice(i * state_length, (i+1) * state_length, 1)));
-        casadi::SX Q2     = mtimes(transpose(S), mtimes(Q1, S));
-        casadi::SX J_temp = mtimes(transpose(u), mtimes(Q2, u));
-
-        J += J_temp;
-    }
-    casadi::SX J_v = jacobian(J, U);
-    casadi::SX J_vv = hessian(J, U);
-
+    casadi::SX X = casadi::SX::sym("X", state_length * n_phi);
+    casadi::SX U = casadi::SX::sym("U", input_length * n_phi);
+    casadi::SX v = vertcat(X, U); 
     casadi::SX x = casadi::SX::sym("x", state_length);
 
-    // Equality constraint //
-    // DCM Error dynamics
+    // COST FUNCTION
+    casadi::SX J = mtimes(transpose(X), mtimes(diag(gain_state_horizon), X)) + mtimes(transpose(U), mtimes(diag(gain_input_horizon), U));
+    casadi::SX J_v = jacobian(J, v);
+    casadi::SX J_vv = hessian(J, v);
+
+
+    // EQUALITY CONSTRAINT
     casadi::SX ceq1;
     casadi::SX xi_err_x = x(0);
     casadi::SX xi_err_y = x(1);
     for (int i = 0; i < n_phi; i++)
     {
+        // Decision variables
+        casadi::SX xi_next_x = X(state_length*i + 0);
+        casadi::SX xi_next_y = X(state_length*i + 1);
+        casadi::SX xi_init_x;
+        casadi::SX xi_init_y;
+
+        if (i > 0)
+        {
+            xi_init_x = X(state_length*(i-1) + 0);
+            xi_init_y = X(state_length*(i-1) + 1);
+        }
+
         casadi::SX p_end_x  = U(input_length*i + 0);
         casadi::SX p_end_y  = U(input_length*i + 1);
         casadi::SX p_init_x = U(input_length*i + 2);
         casadi::SX p_init_y = U(input_length*i + 3);
-        casadi::SX dU_x     = U(input_length*i + 4);
-        casadi::SX dU_y     = U(input_length*i + 5);
-        casadi::SX db_x     = U(input_length*i + 6);
-        casadi::SX db_y     = U(input_length*i + 7);
-        casadi::SX dT       = U(input_length*i + 8);
+        casadi::SX dT       = U(input_length*i + 4);
 
-        casadi::SX xi_init_x;
-        casadi::SX xi_init_y;
-    
-        if (i > 0){
-            xi_init_x = U(input_length*(i-1) + 4) + U(input_length*(i-1) + 6);
-            xi_init_y = U(input_length*(i-1) + 5) + U(input_length*(i-1) + 7);
-        }
-
+        // Reference     
         casadi::SX xi_ref_x = xi_ref_horizon(0, i);
         casadi::SX xi_ref_y = xi_ref_horizon(1, i);
 
@@ -21913,7 +21902,7 @@ void AvatarController::CasADiFunctionGeneration()
 
         if(i == 0)
         {
-            ceq1_x_sub = dU_x + db_x -
+            ceq1_x_sub = xi_next_x -
                         (
                         p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x)
                       + exp((T_step - t_step) / b) * (xi_err_x - (1 - (t_step / T_step_ref)) * p_init_x - (t_step / T_step_ref) * p_end_x - (b / T_step) * (p_end_x - p_init_x))
@@ -21921,7 +21910,7 @@ void AvatarController::CasADiFunctionGeneration()
                       -((b / T_step) * exp((T_step - t_step) / b) - (b / T_step_ref) * exp((T_step_ref - t_step) / b)) * (p_end_ref_x - p_init_ref_x)
                         );
 
-            ceq1_y_sub = dU_y + db_y -
+            ceq1_y_sub = xi_next_y -
                         (
                         p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y)
                       + exp((T_step - t_step) / b) * (xi_err_y - (1 - (t_step / T_step_ref)) * p_init_y - (t_step / T_step_ref) * p_end_y - (b / T_step) * (p_end_y - p_init_y))
@@ -21931,7 +21920,7 @@ void AvatarController::CasADiFunctionGeneration()
         }
         else
         {
-            ceq1_x_sub = dU_x + db_x -
+            ceq1_x_sub = xi_next_x -
                         (
                         p_end_x + (b / T_step) * (p_end_x - p_init_x) - (b / T_step_ref - b / T_step) * (p_end_ref_x - p_init_ref_x) 
                       + exp(T_step / b) * (xi_init_x - p_init_x - (b / T_step) * (p_end_x - p_init_x)) 
@@ -21939,7 +21928,7 @@ void AvatarController::CasADiFunctionGeneration()
                       - ((b / T_step) * exp(T_step / b) - (b / T_step_ref) * exp(T_step_ref / b)) * (p_end_ref_x - p_init_ref_x)
                         );
 
-            ceq1_y_sub = dU_y + db_y -
+            ceq1_y_sub = xi_next_y -
                         (
                         p_end_y + (b / T_step) * (p_end_y - p_init_y) - (b / T_step_ref - b / T_step) * (p_end_ref_y - p_init_ref_y)  
                       + exp(T_step / b) * (xi_init_y - p_init_y - (b / T_step) * (p_end_y - p_init_y)) 
@@ -21953,29 +21942,7 @@ void AvatarController::CasADiFunctionGeneration()
         ceq1 = vertcat(ceq1, ceq1_y_sub);
     }
 
-    casadi::SX ceq1_v = jacobian(ceq1, U);
-
-    // VRP Heuristic Constraint
-    casadi::SX ceq2;
-    for (int i = 0; i < n_phi; i++)
-    {
-        casadi::SX p_end_x  = U(input_length*i + 0);
-        casadi::SX p_end_y  = U(input_length*i + 1);
-
-        casadi::SX p_init_x = U(input_length*i + 2);
-        casadi::SX p_init_y = U(input_length*i + 3);
-
-        casadi::SX ceq2_x_sub;
-        casadi::SX ceq2_y_sub;
-
-        ceq2_x_sub = p_end_x - p_init_x;
-        ceq2_y_sub = p_end_y - p_init_y;
-
-        ceq2 = vertcat(ceq2, ceq2_x_sub);
-        ceq2 = vertcat(ceq2, ceq2_y_sub);
-    }
-
-    casadi::SX ceq2_v = jacobian(ceq2, U);
+    casadi::SX ceq1_v = jacobian(ceq1, v);
 
     // Inequality constraints
     casadi::SX cineq1_max;
@@ -21984,14 +21951,6 @@ void AvatarController::CasADiFunctionGeneration()
     casadi::SX cineq2_min;
     casadi::SX cineq3_max;
     casadi::SX cineq3_min;
-    casadi::SX cineq4_max;
-    casadi::SX cineq4_min;
-    casadi::SX cineq5_max;
-    casadi::SX cineq5_min;
-    casadi::SX cineq6_max;
-    casadi::SX cineq6_min;
-    casadi::SX cineq7_max;
-    casadi::SX cineq7_min;
 
     for (int i = 0; i < n_phi; i++)
     {
@@ -21999,148 +21958,101 @@ void AvatarController::CasADiFunctionGeneration()
         casadi::SX p_end_y  = U(input_length*i + 1);
         casadi::SX p_init_x = U(input_length*i + 2);
         casadi::SX p_init_y = U(input_length*i + 3);
-        casadi::SX dU_x     = U(input_length*i + 4);
-        casadi::SX dU_y     = U(input_length*i + 5);
-        casadi::SX db_x     = U(input_length*i + 6);
-        casadi::SX db_y     = U(input_length*i + 7);
-        casadi::SX dT       = U(input_length*i + 8);
-
-        casadi::SX m = M(i);
+        casadi::SX dT       = U(input_length*i + 4);
         
-        // end of ZMP
-        casadi::SX cineq1_max_x_sub = p_end_x - p_c_x_max;
-        casadi::SX cineq1_max_y_sub = p_end_y - p_c_y_max;
-
-        casadi::SX cineq1_min_x_sub =-p_end_x + p_c_x_min;  
-        casadi::SX cineq1_min_y_sub =-p_end_y + p_c_y_min;
-
-        cineq1_max = vertcat(cineq1_max, cineq1_max_x_sub, cineq1_max_y_sub);
-        cineq1_min = vertcat(cineq1_min, cineq1_min_x_sub, cineq1_min_y_sub);
-
-        // Initial ZMP
-        casadi::SX cineq2_max_x_sub = p_init_x - p_c_x_max;
-        casadi::SX cineq2_max_y_sub = p_init_y - p_c_y_max;
-
-        casadi::SX cineq2_min_x_sub =-p_init_x + p_c_x_min;  
-        casadi::SX cineq2_min_y_sub =-p_init_y + p_c_y_min;
-
-        cineq2_max = vertcat(cineq2_max, cineq2_max_x_sub, cineq2_max_y_sub);
-        cineq2_min = vertcat(cineq2_min, cineq2_min_x_sub, cineq2_min_y_sub);
-
-        // SSP Footstep
-        casadi::SX cineq3_max_x_sub = dU_x - dU_x_max; 
-        casadi::SX cineq3_max_y_sub = dU_y - dU_y_max;
-
-        casadi::SX cineq3_min_x_sub =-dU_x + dU_x_min; 
-        casadi::SX cineq3_min_y_sub =-dU_y + dU_y_min;
-
-        cineq3_max = vertcat(cineq3_max, cineq3_max_x_sub, cineq3_max_y_sub);
-        cineq3_min = vertcat(cineq3_min, cineq3_min_x_sub, cineq3_min_y_sub);
-
-        // DSP Footstep
-        casadi::SX cineq4_max_x_sub = dU_x - m; 
-        casadi::SX cineq4_max_y_sub = dU_y - m;
-
-        casadi::SX cineq4_min_x_sub =-dU_x - m; 
-        casadi::SX cineq4_min_y_sub =-dU_y - m;
-
-        cineq4_max = vertcat(cineq4_max, cineq4_max_x_sub, cineq4_max_y_sub);
-        cineq4_min = vertcat(cineq4_min, cineq4_min_x_sub, cineq4_min_y_sub);
-
-        // Step time
-        casadi::SX cineq5_max_sub = dT - dT_max;
-        casadi::SX cineq5_min_sub =-dT + dT_min(i);
-
-        cineq5_max = vertcat(cineq5_max, cineq5_max_sub);
-        cineq5_min = vertcat(cineq5_min, cineq5_min_sub);
-
-        // Current ZMP
         casadi::SX T_step_ref = T_step_ref_horizon(i);
         casadi::SX T_step = T_step_ref + dT;
 
         casadi::SX p_x = (1 - (t_step / T_step)) * p_init_x + (t_step / T_step) * p_end_x;
         casadi::SX p_y = (1 - (t_step / T_step)) * p_init_y + (t_step / T_step) * p_end_y;
 
-        casadi::SX cineq7_max_x_sub = p_x - p_c_x_max;
-        casadi::SX cineq7_max_y_sub = p_y - p_c_y_max;
+        casadi::SX cineq1_max_x_sub;
+        casadi::SX cineq1_max_y_sub;
+        casadi::SX cineq1_min_x_sub;
+        casadi::SX cineq1_min_y_sub;
 
-        casadi::SX cineq7_min_x_sub =-p_x + p_c_x_min;  
-        casadi::SX cineq7_min_y_sub =-p_y + p_c_y_min;
+        if(i == 0){
+            cineq1_max_x_sub = p_x - p_c_x_max;
+            cineq1_max_y_sub = p_y - p_c_y_max;
 
-        cineq7_max = vertcat(cineq7_max, cineq7_max_x_sub, cineq7_max_y_sub);
-        cineq7_min = vertcat(cineq7_min, cineq7_min_x_sub, cineq7_min_y_sub);
+            cineq1_min_x_sub =-p_x + p_c_x_min;  
+            cineq1_min_y_sub =-p_y + p_c_y_min;
+
+            cineq1_max = vertcat(cineq1_max, cineq1_max_x_sub, cineq1_max_y_sub);
+            cineq1_min = vertcat(cineq1_min, cineq1_min_x_sub, cineq1_min_y_sub);
+        }
+        else{
+            cineq1_max_x_sub = p_end_x - dF_x_max;
+            cineq1_max_y_sub = p_end_y - dF_y_max;
+
+            cineq1_min_x_sub =-p_end_x + dF_x_min;  
+            cineq1_min_y_sub =-p_end_y + dF_y_min;
+
+            cineq1_max = vertcat(cineq1_max, cineq1_max_x_sub, cineq1_max_y_sub);
+            cineq1_min = vertcat(cineq1_min, cineq1_min_x_sub, cineq1_min_y_sub);
+
+            cineq1_max_x_sub = p_init_x - dF_x_max;
+            cineq1_max_y_sub = p_init_y - dF_y_max;
+
+            cineq1_min_x_sub =-p_init_x + dF_x_min;  
+            cineq1_min_y_sub =-p_init_y + dF_y_min;
+
+            cineq1_max = vertcat(cineq1_max, cineq1_max_x_sub, cineq1_max_y_sub);
+            cineq1_min = vertcat(cineq1_min, cineq1_min_x_sub, cineq1_min_y_sub);
+        }
+
+        // Step time
+        casadi::SX cineq2_max_sub = dT - dT_max;
+        casadi::SX cineq2_min_sub =-dT + dT_min(i);
+
+        cineq2_max = vertcat(cineq2_max, cineq2_max_sub);
+        cineq2_min = vertcat(cineq2_min, cineq2_min_sub);
     }
 
     // Swing foot speed
-    casadi::SX dU_x = U(4);
-    casadi::SX dU_y = U(5);
-    casadi::SX cineq6_max_x_sub;
-    casadi::SX cineq6_max_y_sub;
-    casadi::SX cineq6_min_x_sub;
-    casadi::SX cineq6_min_y_sub;
+    casadi::SX dF_x = U(7);
+    casadi::SX dF_y = U(8);
+    casadi::SX cineq3_max_x_sub;
+    casadi::SX cineq3_max_y_sub;
+    casadi::SX cineq3_min_x_sub;
+    casadi::SX cineq3_min_y_sub;
 
-    cineq6_max_x_sub = dU_x - V_x_max * (T_step_ref_horizon(0) - t_step);
-    cineq6_max_y_sub = dU_y - V_y_max * (T_step_ref_horizon(0) - t_step);
+    cineq3_max_x_sub = dF_x - V_x_max * (T_step_ref_horizon(0) - t_step);
+    cineq3_max_y_sub = dF_y - V_y_max * (T_step_ref_horizon(0) - t_step);
 
-    cineq6_min_x_sub =-dU_x + V_x_min * (T_step_ref_horizon(0) - t_step);
-    cineq6_min_y_sub =-dU_y + V_y_min * (T_step_ref_horizon(0) - t_step);
+    cineq3_min_x_sub =-dF_x + V_x_min * (T_step_ref_horizon(0) - t_step);
+    cineq3_min_y_sub =-dF_y + V_y_min * (T_step_ref_horizon(0) - t_step);
 
-    cineq6_max = vertcat(cineq6_max, cineq6_max_x_sub, cineq6_max_y_sub);
-    cineq6_min = vertcat(cineq6_min, cineq6_min_x_sub, cineq6_min_y_sub);
+    cineq3_max = vertcat(cineq3_max, cineq3_max_x_sub, cineq3_max_y_sub);
+    cineq3_min = vertcat(cineq3_min, cineq3_min_x_sub, cineq3_min_y_sub);
 
-    casadi::SX cineq1_max_v = jacobian(cineq1_max, U);
-    casadi::SX cineq1_min_v = jacobian(cineq1_min, U);
-    casadi::SX cineq2_max_v = jacobian(cineq2_max, U);
-    casadi::SX cineq2_min_v = jacobian(cineq2_min, U);
-    casadi::SX cineq3_max_v = jacobian(cineq3_max, U);
-    casadi::SX cineq3_min_v = jacobian(cineq3_min, U);
-    casadi::SX cineq4_max_v = jacobian(cineq4_max, U);
-    casadi::SX cineq4_min_v = jacobian(cineq4_min, U);
-    casadi::SX cineq5_max_v = jacobian(cineq5_max, U);
-    casadi::SX cineq5_min_v = jacobian(cineq5_min, U);
-    casadi::SX cineq6_max_v = jacobian(cineq6_max, U);
-    casadi::SX cineq6_min_v = jacobian(cineq6_min, U);
-    casadi::SX cineq7_max_v = jacobian(cineq7_max, U);
-    casadi::SX cineq7_min_v = jacobian(cineq7_min, U);
+    casadi::SX cineq1_max_v = jacobian(cineq1_max, v);
+    casadi::SX cineq1_min_v = jacobian(cineq1_min, v);
+    casadi::SX cineq2_max_v = jacobian(cineq2_max, v);
+    casadi::SX cineq2_min_v = jacobian(cineq2_min, v);
+    casadi::SX cineq3_max_v = jacobian(cineq3_max, v);
+    casadi::SX cineq3_min_v = jacobian(cineq3_min, v);
 
     // Function Generation //
-    casadi::Function J_v_func("J_v_func",  {gain_state_horizon, gain_input_horizon, U}, {J_v});
-    casadi::Function J_vv_func("J_vv_func",{gain_state_horizon, gain_input_horizon, U}, {J_vv});
+    casadi::Function J_v_func("J_v_func",  {gain_state_horizon, gain_input_horizon, X, U}, {J_v});
+    casadi::Function J_vv_func("J_vv_func",{gain_state_horizon, gain_input_horizon, X, U}, {J_vv});
 
-    casadi::Function ceq1_func("ceq1_func",     {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1});
-    casadi::Function ceq2_func("ceq2_func",     {U}, {ceq2});
-    casadi::Function ceq1_v_func("ceq1_v_func", {x, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1_v});
-    casadi::Function ceq2_v_func("ceq2_v_func", {U}, {ceq2_v});
+    casadi::Function ceq1_func("ceq1_func",     {x, X, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1});
+    casadi::Function ceq1_v_func("ceq1_v_func", {x, X, U, b, t_step, xi_ref_horizon, p_init_ref_horizon, p_end_ref_horizon, T_step_ref_horizon}, {ceq1_v});
 
-    casadi::Function cineq1_max_func("cineq1_max_func", {U, p_c_x_max, p_c_y_max},                             {cineq1_max});
-    casadi::Function cineq1_min_func("cineq1_min_func", {U, p_c_x_min, p_c_y_min},                             {cineq1_min});
-    casadi::Function cineq2_max_func("cineq2_max_func", {U, p_c_x_max, p_c_y_max},                             {cineq2_max});
-    casadi::Function cineq2_min_func("cineq2_min_func", {U, p_c_x_min, p_c_y_min},                             {cineq2_min});
-    casadi::Function cineq3_max_func("cineq3_max_func", {U, dU_x_max, dU_y_max},                               {cineq3_max});
-    casadi::Function cineq3_min_func("cineq3_min_func", {U, dU_x_min, dU_y_min},                               {cineq3_min});
-    casadi::Function cineq4_max_func("cineq4_max_func", {U, M},                                                {cineq4_max});
-    casadi::Function cineq4_min_func("cineq4_min_func", {U, M},                                                {cineq4_min});
-    casadi::Function cineq5_max_func("cineq5_max_func", {U, dT_max},                                           {cineq5_max});
-    casadi::Function cineq5_min_func("cineq5_min_func", {U, dT_min},                                           {cineq5_min});
-    casadi::Function cineq6_max_func("cineq6_max_func", {U, V_x_max, V_y_max, t_step, T_step_ref_horizon, dU_x_prev, dU_y_prev, dt},     {cineq6_max});
-    casadi::Function cineq6_min_func("cineq6_min_func", {U, V_x_min, V_y_min, t_step, T_step_ref_horizon, dU_x_prev, dU_y_prev, dt},     {cineq6_min});
-    casadi::Function cineq7_max_func("cineq7_max_func", {U, p_c_x_max, p_c_y_max, t_step, T_step_ref_horizon}, {cineq7_max});
-    casadi::Function cineq7_min_func("cineq7_min_func", {U, p_c_x_min, p_c_y_min, t_step, T_step_ref_horizon}, {cineq7_min});
+    casadi::Function cineq1_max_func("cineq1_max_func", {U, p_c_x_max, p_c_y_max, dF_x_max, dF_y_max, t_step, T_step_ref_horizon},  {cineq1_max});
+    casadi::Function cineq1_min_func("cineq1_min_func", {U, p_c_x_min, p_c_y_min, dF_x_min, dF_y_min, t_step, T_step_ref_horizon},  {cineq1_min});
+    casadi::Function cineq2_max_func("cineq2_max_func", {U, dT_max},                                                                {cineq2_max});
+    casadi::Function cineq2_min_func("cineq2_min_func", {U, dT_min},                                                                {cineq2_min});
+    casadi::Function cineq3_max_func("cineq3_max_func", {U, V_x_max, V_y_max, t_step, T_step_ref_horizon},                          {cineq3_max});
+    casadi::Function cineq3_min_func("cineq3_min_func", {U, V_x_min, V_y_min, t_step, T_step_ref_horizon},                          {cineq3_min});
 
-    casadi::Function cineq1_max_v_func("cineq1_max_v_func", {U, p_c_x_max, p_c_y_max},                             {cineq1_max_v});
-    casadi::Function cineq1_min_v_func("cineq1_min_v_func", {U, p_c_x_min, p_c_y_min},                             {cineq1_min_v});
-    casadi::Function cineq2_max_v_func("cineq2_max_v_func", {U, p_c_x_max, p_c_y_max},                             {cineq2_max_v});
-    casadi::Function cineq2_min_v_func("cineq2_min_v_func", {U, p_c_x_min, p_c_y_min},                             {cineq2_min_v});
-    casadi::Function cineq3_max_v_func("cineq3_max_v_func", {U, dU_x_max, dU_y_max},                               {cineq3_max_v});
-    casadi::Function cineq3_min_v_func("cineq3_min_v_func", {U, dU_x_min, dU_y_min},                               {cineq3_min_v});
-    casadi::Function cineq4_max_v_func("cineq4_max_v_func", {U, M},                                                {cineq4_max_v});
-    casadi::Function cineq4_min_v_func("cineq4_min_v_func", {U, M},                                                {cineq4_min_v});
-    casadi::Function cineq5_max_v_func("cineq5_max_v_func", {U, dT_max},                                           {cineq5_max_v});
-    casadi::Function cineq5_min_v_func("cineq5_min_v_func", {U, dT_min},                                           {cineq5_min_v});
-    casadi::Function cineq6_max_v_func("cineq6_max_v_func", {U, V_x_max, V_y_max, t_step, T_step_ref_horizon, dU_x_prev, dU_y_prev, dt},       {cineq6_max_v});
-    casadi::Function cineq6_min_v_func("cineq6_min_v_func", {U, V_x_min, V_y_min, t_step, T_step_ref_horizon, dU_x_prev, dU_y_prev, dt},       {cineq6_min_v});
-    casadi::Function cineq7_max_v_func("cineq7_max_v_func", {U, p_c_x_max, p_c_y_max, t_step, T_step_ref_horizon}, {cineq7_max_v});
-    casadi::Function cineq7_min_v_func("cineq7_min_v_func", {U, p_c_x_min, p_c_y_min, t_step, T_step_ref_horizon}, {cineq7_min_v});
+    casadi::Function cineq1_max_v_func("cineq1_max_v_func", {U, p_c_x_max, p_c_y_max, dF_x_max, dF_y_max, t_step, T_step_ref_horizon},  {cineq1_max_v});
+    casadi::Function cineq1_min_v_func("cineq1_min_v_func", {U, p_c_x_min, p_c_y_min, dF_x_min, dF_y_min, t_step, T_step_ref_horizon},  {cineq1_min_v});
+    casadi::Function cineq2_max_v_func("cineq2_max_v_func", {U, dT_max},                                                                {cineq2_max_v});
+    casadi::Function cineq2_min_v_func("cineq2_min_v_func", {U, dT_min},                                                                {cineq2_min_v});
+    casadi::Function cineq3_max_v_func("cineq3_max_v_func", {U, V_x_max, V_y_max, t_step, T_step_ref_horizon},                          {cineq3_max_v});
+    casadi::Function cineq3_min_v_func("cineq3_min_v_func", {U, V_x_min, V_y_min, t_step, T_step_ref_horizon},                          {cineq3_min_v});
 
     /////////////////////////
     // Function Generation //
@@ -22154,8 +22066,6 @@ void AvatarController::CasADiFunctionGeneration()
 
     myCodeGen.add(ceq1_func);
     myCodeGen.add(ceq1_v_func);
-    myCodeGen.add(ceq2_func);
-    myCodeGen.add(ceq2_v_func);
 
     myCodeGen.add(cineq1_max_func);
     myCodeGen.add(cineq1_min_func);
@@ -22163,14 +22073,6 @@ void AvatarController::CasADiFunctionGeneration()
     myCodeGen.add(cineq2_min_func);
     myCodeGen.add(cineq3_max_func);
     myCodeGen.add(cineq3_min_func);
-    myCodeGen.add(cineq4_max_func);
-    myCodeGen.add(cineq4_min_func);
-    myCodeGen.add(cineq5_max_func);
-    myCodeGen.add(cineq5_min_func);
-    myCodeGen.add(cineq6_max_func);
-    myCodeGen.add(cineq6_min_func);
-    myCodeGen.add(cineq7_max_func);
-    myCodeGen.add(cineq7_min_func);
 
     myCodeGen.add(cineq1_max_v_func);
     myCodeGen.add(cineq1_min_v_func);
@@ -22178,14 +22080,6 @@ void AvatarController::CasADiFunctionGeneration()
     myCodeGen.add(cineq2_min_v_func);
     myCodeGen.add(cineq3_max_v_func);
     myCodeGen.add(cineq3_min_v_func);
-    myCodeGen.add(cineq4_max_v_func);
-    myCodeGen.add(cineq4_min_v_func);
-    myCodeGen.add(cineq5_max_v_func);
-    myCodeGen.add(cineq5_min_v_func);
-    myCodeGen.add(cineq6_max_v_func);
-    myCodeGen.add(cineq6_min_v_func);   
-    myCodeGen.add(cineq7_max_v_func);
-    myCodeGen.add(cineq7_min_v_func);
 
     myCodeGen.generate(prefix_code);
 
@@ -22209,6 +22103,11 @@ void AvatarController::CasADiFunctionGeneration()
 }
 
 void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time)
+{
+    std::cout << "bigM based getGradHessDcm_NMPC_CasADi is not used" << std::endl;
+}
+
+void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const double &transition_phase_current_time)
 {   
     ///////////
     // START //
@@ -22219,8 +22118,6 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     const int state_length = nmpc.state_length;
     const int input_length = nmpc.input_length;
     const int n_phi = nmpc.n_phi;
-
-    const int step_constraint_num = nmpc.step_constraint_num;
 
     const int total_num_constraint = nmpc.total_num_constraint;
     const int dt_MPC = 1.0 / 50.0;  // 50 Hz
@@ -22238,8 +22135,6 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
 
     casadi::Function ceq1   = casadi::external("ceq1_func", lib_full_name);
     casadi::Function ceq1_v = casadi::external("ceq1_v_func", lib_full_name);
-    casadi::Function ceq2   = casadi::external("ceq2_func", lib_full_name);
-    casadi::Function ceq2_v = casadi::external("ceq2_v_func", lib_full_name);
 
     casadi::Function cineq1_max = casadi::external("cineq1_max_func", lib_full_name);
     casadi::Function cineq1_min = casadi::external("cineq1_min_func", lib_full_name);
@@ -22247,14 +22142,6 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     casadi::Function cineq2_min = casadi::external("cineq2_min_func", lib_full_name);
     casadi::Function cineq3_max = casadi::external("cineq3_max_func", lib_full_name);
     casadi::Function cineq3_min = casadi::external("cineq3_min_func", lib_full_name);
-    casadi::Function cineq4_max = casadi::external("cineq4_max_func", lib_full_name);
-    casadi::Function cineq4_min = casadi::external("cineq4_min_func", lib_full_name);
-    casadi::Function cineq5_max = casadi::external("cineq5_max_func", lib_full_name);
-    casadi::Function cineq5_min = casadi::external("cineq5_min_func", lib_full_name);
-    casadi::Function cineq6_max = casadi::external("cineq6_max_func", lib_full_name);
-    casadi::Function cineq6_min = casadi::external("cineq6_min_func", lib_full_name);
-    casadi::Function cineq7_max = casadi::external("cineq7_max_func", lib_full_name);
-    casadi::Function cineq7_min = casadi::external("cineq7_min_func", lib_full_name);
 
     casadi::Function cineq1_max_v = casadi::external("cineq1_max_v_func", lib_full_name);
     casadi::Function cineq1_min_v = casadi::external("cineq1_min_v_func", lib_full_name);
@@ -22262,84 +22149,77 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
     casadi::Function cineq2_min_v = casadi::external("cineq2_min_v_func", lib_full_name);
     casadi::Function cineq3_max_v = casadi::external("cineq3_max_v_func", lib_full_name);
     casadi::Function cineq3_min_v = casadi::external("cineq3_min_v_func", lib_full_name);
-    casadi::Function cineq4_max_v = casadi::external("cineq4_max_v_func", lib_full_name);
-    casadi::Function cineq4_min_v = casadi::external("cineq4_min_v_func", lib_full_name);
-    casadi::Function cineq5_max_v = casadi::external("cineq5_max_v_func", lib_full_name);
-    casadi::Function cineq5_min_v = casadi::external("cineq5_min_v_func", lib_full_name);
-    casadi::Function cineq6_max_v = casadi::external("cineq6_max_v_func", lib_full_name);
-    casadi::Function cineq6_min_v = casadi::external("cineq6_min_v_func", lib_full_name);
-    casadi::Function cineq7_max_v = casadi::external("cineq7_max_v_func", lib_full_name);
-    casadi::Function cineq7_min_v = casadi::external("cineq7_min_v_func", lib_full_name);
 
     //////////////////////////////////////
     // MPC Input (Eigen library vector) //
     Eigen::VectorXd gain_state_horizon; gain_state_horizon.setZero(n_phi * state_length);
     Eigen::VectorXd gain_input_horizon; gain_input_horizon.setZero(n_phi * input_length);
+    Eigen::VectorXd X; X.setZero(n_phi * state_length); 
     Eigen::VectorXd U; U.setZero(n_phi * input_length); 
 
-    U = v;
+    X = v.segment(                   0, n_phi * state_length);
+    U = v.segment(n_phi * state_length, n_phi * input_length);
 
-    double w_dT        = w_nmpc[0];
+    double w_xi_err_x = w_nmpc[0];
+    double w_xi_err_y = w_nmpc[1];
 
-    double w_xi_err_x  = w_nmpc[1];
-    double w_p_c_x     = w_nmpc[2];
-    double w_dU_x      = w_nmpc[3];
-    double w_db_x      = w_nmpc[4];
-    
-    double w_xi_err_y  = w_nmpc[5]; 
-    double w_p_c_y     = w_nmpc[6];
-    double w_dU_y      = w_nmpc[7];
-    double w_db_y      = w_nmpc[8];
+    double w_p_end_x  = w_nmpc[2];
+    double w_p_end_y  = w_nmpc[3];
+    double w_p_init_x = w_nmpc[4];
+    double w_p_init_y = w_nmpc[5];
+    double w_F_x      = w_nmpc[6]; 
+    double w_F_y      = w_nmpc[7]; 
+    double w_dT       = w_nmpc[8];
 
     for (int i = 0; i < n_phi ; i++)
     {
+        gain_state_horizon(i*state_length + 0) = w_xi_err_x;
+        gain_state_horizon(i*state_length + 1) = w_xi_err_y;
+
         if(i == 0){
-            gain_state_horizon(i*state_length + 0) = 0.0;
-            gain_state_horizon(i*state_length + 1) = 0.0;
+            gain_input_horizon(i*input_length + 0) = w_p_end_x;
+            gain_input_horizon(i*input_length + 1) = w_p_end_y;
+            gain_input_horizon(i*input_length + 2) = w_p_init_x;
+            gain_input_horizon(i*input_length + 3) = w_p_init_y;
+            gain_input_horizon(i*input_length + 4) = w_dT;
         }
         else{
-            gain_state_horizon(i*state_length + 0) = w_xi_err_x;
-            gain_state_horizon(i*state_length + 1) = w_xi_err_y;
+            gain_input_horizon(i*input_length + 0) = w_F_x;
+            gain_input_horizon(i*input_length + 1) = w_F_y;
+            gain_input_horizon(i*input_length + 2) = w_F_x;
+            gain_input_horizon(i*input_length + 3) = w_F_y;
+            gain_input_horizon(i*input_length + 4) = w_dT;
         }
 
-        gain_input_horizon(i*input_length + 0) = w_p_c_x;
-        gain_input_horizon(i*input_length + 1) = w_p_c_y;
-        gain_input_horizon(i*input_length + 2) = w_p_c_x;
-        gain_input_horizon(i*input_length + 3) = w_p_c_y;
-        gain_input_horizon(i*input_length + 4) = w_dU_x;
-        gain_input_horizon(i*input_length + 5) = w_dU_y;
-        gain_input_horizon(i*input_length + 6) = w_db_x;
-        gain_input_horizon(i*input_length + 7) = w_db_y;
-        gain_input_horizon(i*input_length + 8) = w_dT;
     }
 
     // Footstep constraints
-    double dU_x_min = 0.0; double dU_x_max = 0.0;
-    double dU_y_min = 0.0; double dU_y_max = 0.0;
+    double dF_x_min = 0.0; double dF_x_max = 0.0;
+    double dF_y_min = 0.0; double dF_y_max = 0.0;
 
     if (is_left_foot_support_mpc == true)          // swing foot : right foot (-0.25)
     {
-        // dU_x_max = nmpc.dU_x_max - rfoot_support_current_mpc_.translation()(0);
-        // dU_x_min = nmpc.dU_x_min - rfoot_support_current_mpc_.translation()(0);
-        // dU_y_max =-nmpc.dU_y_min - rfoot_support_current_mpc_.translation()(1); // 0.03
-        // dU_y_min =-nmpc.dU_y_max - rfoot_support_current_mpc_.translation()(1); //-0.13
+        // dF_x_max = nmpc.dF_x_max - rfoot_support_current_mpc_.translation()(0);
+        // dF_x_min = nmpc.dF_x_min - rfoot_support_current_mpc_.translation()(0);
+        // dF_y_max =-nmpc.dF_y_min - rfoot_support_current_mpc_.translation()(1); // 0.03
+        // dF_y_min =-nmpc.dF_y_max - rfoot_support_current_mpc_.translation()(1); //-0.13
 
-        dU_x_max = 0.2;
-        dU_x_min =-0.2;
-        dU_y_max = 0.03; // 0.03
-        dU_y_min =-0.13; //-0.13
+        dF_x_max = 0.2;
+        dF_x_min =-0.2;
+        dF_y_max = 0.03; // 0.03
+        dF_y_min =-0.13; //-0.13
     }
     else if (is_right_foot_support_mpc == true)   // swing foot : left foot (0.25)
     {
-        // dU_x_max = nmpc.dU_x_max - lfoot_support_current_mpc_.translation()(0);
-        // dU_x_min = nmpc.dU_x_min - lfoot_support_current_mpc_.translation()(0);
-        // dU_y_max = nmpc.dU_y_max - lfoot_support_current_mpc_.translation()(1); // 0.13
-        // dU_y_min = nmpc.dU_y_min - lfoot_support_current_mpc_.translation()(1); //-0.03
+        // dF_x_max = nmpc.dF_x_max - lfoot_support_current_mpc_.translation()(0);
+        // dF_x_min = nmpc.dF_x_min - lfoot_support_current_mpc_.translation()(0);
+        // dF_y_max = nmpc.dF_y_max - lfoot_support_current_mpc_.translation()(1); // 0.13
+        // dF_y_min = nmpc.dF_y_min - lfoot_support_current_mpc_.translation()(1); //-0.03
 
-        dU_x_max = 0.2;
-        dU_x_min =-0.2;
-        dU_y_max = 0.13; // 0.03
-        dU_y_min =-0.03; //-0.13
+        dF_x_max = 0.2;
+        dF_x_min =-0.2;
+        dF_y_max = 0.13; // 0.03
+        dF_y_min =-0.03; //-0.13
     }
 
     // Step time constraints
@@ -22373,6 +22253,8 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
 
     casadi::DM dm_gain_input_horizon; EigenVectorToCasadiDM(dm_gain_input_horizon, gain_input_horizon, n_phi * input_length);
 
+    casadi::DM dm_X; EigenVectorToCasadiDM(dm_X, X, n_phi * state_length);
+
     casadi::DM dm_U; EigenVectorToCasadiDM(dm_U, U, n_phi * input_length);
 
     casadi::DM dm_xi_err; EigenVectorToCasadiDM(dm_xi_err, xi_err, state_length);
@@ -22385,171 +22267,99 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
 
     casadi::DM dm_T_step_ref_horizon; EigenVectorToCasadiDM(dm_T_step_ref_horizon, T_step_ref_horizon, n_phi);
 
-    casadi::DM dm_big_M; EigenVectorToCasadiDM(dm_big_M, big_M, n_phi);
-
     casadi::DM dm_dT_min; EigenVectorToCasadiDM(dm_dT_min, dT_min, n_phi);
 
-    std::vector<casadi::DM> J_v_result  =   J_v(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_U});
-    std::vector<casadi::DM> J_vv_result =  J_vv(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_U});
+    std::vector<casadi::DM> J_v_result  =   J_v(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_X, dm_U});
+    std::vector<casadi::DM> J_vv_result =  J_vv(std::vector<casadi::DM>{dm_gain_state_horizon, dm_gain_input_horizon, dm_X, dm_U});
 
-    std::vector<casadi::DM> ceq1_result   =   ceq1(std::vector<casadi::DM>{dm_xi_err, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
-    std::vector<casadi::DM> ceq1_v_result = ceq1_v(std::vector<casadi::DM>{dm_xi_err, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
-    std::vector<casadi::DM> ceq2_result   =   ceq2(std::vector<casadi::DM>{dm_U});
-    std::vector<casadi::DM> ceq2_v_result = ceq2_v(std::vector<casadi::DM>{dm_U});
+    std::vector<casadi::DM> ceq1_result   =   ceq1(std::vector<casadi::DM>{dm_xi_err, dm_X, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> ceq1_v_result = ceq1_v(std::vector<casadi::DM>{dm_xi_err, dm_X, dm_U, b, transition_phase_current_time, dm_xi_ref_horizon, dm_p_init_ref_horizon, dm_p_end_ref_horizon, dm_T_step_ref_horizon});
 
-    std::vector<casadi::DM> cineq1_max_result = cineq1_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
-    std::vector<casadi::DM> cineq1_min_result = cineq1_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
-    std::vector<casadi::DM> cineq2_max_result = cineq2_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
-    std::vector<casadi::DM> cineq2_min_result = cineq2_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
-    std::vector<casadi::DM> cineq3_max_result = cineq3_max(std::vector<casadi::DM>{dm_U, dU_x_max, dU_y_max});
-    std::vector<casadi::DM> cineq3_min_result = cineq3_min(std::vector<casadi::DM>{dm_U, dU_x_min, dU_y_min});
-    std::vector<casadi::DM> cineq4_max_result = cineq4_max(std::vector<casadi::DM>{dm_U, dm_big_M});
-    std::vector<casadi::DM> cineq4_min_result = cineq4_min(std::vector<casadi::DM>{dm_U, dm_big_M});
-    std::vector<casadi::DM> cineq5_max_result = cineq5_max(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
-    std::vector<casadi::DM> cineq5_min_result = cineq5_min(std::vector<casadi::DM>{dm_U, dm_dT_min});
-    std::vector<casadi::DM> cineq6_max_result = cineq6_max(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, transition_phase_current_time, dm_T_step_ref_horizon, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq6_min_result = cineq6_min(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, transition_phase_current_time, dm_T_step_ref_horizon, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq7_max_result = cineq7_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
-    std::vector<casadi::DM> cineq7_min_result = cineq7_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq1_max_result   = cineq1_max(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, dF_x_max, dF_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq1_min_result   = cineq1_min(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, dF_x_min, dF_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq2_max_result   = cineq2_max(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
+    std::vector<casadi::DM> cineq2_min_result   = cineq2_min(std::vector<casadi::DM>{dm_U, dm_dT_min});
+    std::vector<casadi::DM> cineq3_max_result   = cineq3_max(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq3_min_result   = cineq3_min(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
 
-    std::vector<casadi::DM> cineq1_max_v_result = cineq1_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
-    std::vector<casadi::DM> cineq1_min_v_result = cineq1_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
-    std::vector<casadi::DM> cineq2_max_v_result = cineq2_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max});
-    std::vector<casadi::DM> cineq2_min_v_result = cineq2_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min});
-    std::vector<casadi::DM> cineq3_max_v_result = cineq3_max_v(std::vector<casadi::DM>{dm_U, dU_x_max, dU_y_max});
-    std::vector<casadi::DM> cineq3_min_v_result = cineq3_min_v(std::vector<casadi::DM>{dm_U, dU_x_min, dU_y_min});
-    std::vector<casadi::DM> cineq4_max_v_result = cineq4_max_v(std::vector<casadi::DM>{dm_U, dm_big_M});
-    std::vector<casadi::DM> cineq4_min_v_result = cineq4_min_v(std::vector<casadi::DM>{dm_U, dm_big_M});
-    std::vector<casadi::DM> cineq5_max_v_result = cineq5_max_v(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
-    std::vector<casadi::DM> cineq5_min_v_result = cineq5_min_v(std::vector<casadi::DM>{dm_U, dm_dT_min});
-    std::vector<casadi::DM> cineq6_max_v_result = cineq6_max_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, transition_phase_current_time, dm_T_step_ref_horizon, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq6_min_v_result = cineq6_min_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, transition_phase_current_time, dm_T_step_ref_horizon, dU_x_prev, dU_y_prev, dt_MPC});
-    std::vector<casadi::DM> cineq7_max_v_result = cineq7_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
-    std::vector<casadi::DM> cineq7_min_v_result = cineq7_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq1_max_v_result = cineq1_max_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_max, nmpc.p_c_y_max, dF_x_max, dF_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq1_min_v_result = cineq1_min_v(std::vector<casadi::DM>{dm_U, nmpc.p_c_x_min, nmpc.p_c_y_min, dF_x_max, dF_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq2_max_v_result = cineq2_max_v(std::vector<casadi::DM>{dm_U, nmpc.dT_max});
+    std::vector<casadi::DM> cineq2_min_v_result = cineq2_min_v(std::vector<casadi::DM>{dm_U, dm_dT_min});
+    std::vector<casadi::DM> cineq3_max_v_result = cineq3_max_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_max, nmpc.V_y_max, transition_phase_current_time, dm_T_step_ref_horizon});
+    std::vector<casadi::DM> cineq3_min_v_result = cineq3_min_v(std::vector<casadi::DM>{dm_U, nmpc.V_x_min, nmpc.V_y_min, transition_phase_current_time, dm_T_step_ref_horizon});
 
     ////////////////////////////////////
     // Transform variables for qpOASES //
     // Cost function 
-    Q.setZero(input_length * n_phi, input_length * n_phi);
+    Q.setZero((state_length + input_length) * n_phi, (state_length + input_length) * n_phi);
     Q = CasadiDMVectorToEigenMatrix(J_vv_result);
 
-    p.setZero(input_length * n_phi);
+    p.setZero((state_length + input_length) * n_phi);
     p = CasadiDMVectorToEigenVector(J_v_result);
 
     // Equality constraints 
-    Eigen::MatrixXd Aeq1;     Aeq1.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbAeq1; lbAeq1.setZero(state_length * n_phi);
-    Eigen::VectorXd ubAeq1; ubAeq1.setZero(state_length * n_phi);
+    const int ceq1_num = state_length * n_phi;
+    Eigen::MatrixXd Aeq1;     Aeq1.setZero(ceq1_num, (state_length + input_length) * n_phi);
+    Eigen::VectorXd lbAeq1; lbAeq1.setZero(ceq1_num * n_phi);
+    Eigen::VectorXd ubAeq1; ubAeq1.setZero(ceq1_num * n_phi);
     Aeq1 = CasadiDMVectorToEigenMatrix(ceq1_v_result);
     lbAeq1 = (-1.0) * CasadiDMVectorToEigenVector(ceq1_result);
     ubAeq1 = (-1.0) * CasadiDMVectorToEigenVector(ceq1_result);
 
-    Eigen::MatrixXd Aeq2;     Aeq2.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbAeq2; lbAeq2.setZero(state_length * n_phi);
-    Eigen::VectorXd ubAeq2; ubAeq2.setZero(state_length * n_phi);
-    Aeq2 = CasadiDMVectorToEigenMatrix(ceq2_v_result);
-    lbAeq2 = (-1.0) * CasadiDMVectorToEigenVector(ceq2_result);
-    ubAeq2 = (-1.0) * CasadiDMVectorToEigenVector(ceq2_result);
-
     // Inequality constraints 
-    Eigen::MatrixXd A1;     A1.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA1; lbA1.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA1; ubA1.setZero(state_length * n_phi);
+    const int cineq1_num = 2 * state_length * n_phi - state_length;
+    Eigen::MatrixXd A1;     A1.setZero(cineq1_num, (state_length + input_length) * n_phi);
+    Eigen::VectorXd lbA1; lbA1.setZero(cineq1_num); 
+    Eigen::VectorXd ubA1; ubA1.setZero(cineq1_num);
     A1 = CasadiDMVectorToEigenMatrix(cineq1_max_v_result);
     lbA1 = (+1.0) * CasadiDMVectorToEigenVector(cineq1_min_result);
     ubA1 = (-1.0) * CasadiDMVectorToEigenVector(cineq1_max_result);
 
-    Eigen::MatrixXd A2;     A2.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA2; lbA2.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA2; ubA2.setZero(state_length * n_phi);
+    const int cineq2_num = n_phi;
+    Eigen::MatrixXd A2;     A2.setZero(cineq2_num, (state_length + input_length) * n_phi);
+    Eigen::VectorXd lbA2; lbA2.setZero(cineq2_num); 
+    Eigen::VectorXd ubA2; ubA2.setZero(cineq2_num);
     A2= CasadiDMVectorToEigenMatrix(cineq2_max_v_result);
     lbA2 = (+1.0) * CasadiDMVectorToEigenVector(cineq2_min_result);
     ubA2 = (-1.0) * CasadiDMVectorToEigenVector(cineq2_max_result);
 
-    Eigen::MatrixXd A3;     A3.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA3; lbA3.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA3; ubA3.setZero(state_length * n_phi);
+    const int cineq3_num = state_length;
+    Eigen::MatrixXd A3;     A3.setZero(cineq3_num, (state_length + input_length) * n_phi);
+    Eigen::VectorXd lbA3; lbA3.setZero(cineq3_num); 
+    Eigen::VectorXd ubA3; ubA3.setZero(cineq3_num);
     A3 = CasadiDMVectorToEigenMatrix(cineq3_max_v_result);
     lbA3 = (+1.0) * CasadiDMVectorToEigenVector(cineq3_min_result);
     ubA3 = (-1.0) * CasadiDMVectorToEigenVector(cineq3_max_result);
 
-    Eigen::MatrixXd A4;     A4.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA4; lbA4.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA4; ubA4.setZero(state_length * n_phi);
-    A4 = CasadiDMVectorToEigenMatrix(cineq4_max_v_result);
-    lbA4 = (+1.0) * CasadiDMVectorToEigenVector(cineq4_min_result);
-    ubA4 = (-1.0) * CasadiDMVectorToEigenVector(cineq4_max_result);
-
-    Eigen::MatrixXd A5;     A5.setZero(n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA5; lbA5.setZero(n_phi); 
-    Eigen::VectorXd ubA5; ubA5.setZero(n_phi);
-    A5 = CasadiDMVectorToEigenMatrix(cineq5_max_v_result);
-    lbA5 = (+1.0) * CasadiDMVectorToEigenVector(cineq5_min_result);
-    ubA5 = (-1.0) * CasadiDMVectorToEigenVector(cineq5_max_result);
-    
-    Eigen::MatrixXd A6;     A6.setZero(step_constraint_num, input_length * n_phi);
-    Eigen::VectorXd lbA6; lbA6.setZero(step_constraint_num); 
-    Eigen::VectorXd ubA6; ubA6.setZero(step_constraint_num);
-    A6 = CasadiDMVectorToEigenMatrix(cineq6_max_v_result);
-    lbA6 = (+1.0) * CasadiDMVectorToEigenVector(cineq6_min_result);
-    ubA6 = (-1.0) * CasadiDMVectorToEigenVector(cineq6_max_result);
-
-    Eigen::MatrixXd A7;     A7.setZero(state_length * n_phi, input_length * n_phi);
-    Eigen::VectorXd lbA7; lbA7.setZero(state_length * n_phi); 
-    Eigen::VectorXd ubA7; ubA7.setZero(state_length * n_phi);
-    A7 = CasadiDMVectorToEigenMatrix(cineq7_max_v_result);
-    lbA7 = (+1.0) * CasadiDMVectorToEigenVector(cineq7_min_result);
-    ubA7 = (-1.0) * CasadiDMVectorToEigenVector(cineq7_max_result);
-
     int stack_cnt = 0;
-    // (***) TODO: Build constraint matrix.
-    A.setZero(total_num_constraint, input_length * n_phi);
+    A.setZero(total_num_constraint, (state_length + input_length) * n_phi);
     lbA.setZero(total_num_constraint);
     ubA.setZero(total_num_constraint);
 
-    A.block(stack_cnt * n_phi, 0,  state_length * n_phi, input_length * n_phi) = Aeq1;
-    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbAeq1;
-    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubAeq1;
-    stack_cnt = stack_cnt + 2;
+    A.block(stack_cnt, 0,   ceq1_num, (state_length + input_length) * n_phi) = Aeq1;
+    lbA.segment(stack_cnt,  ceq1_num) = lbAeq1;
+    ubA.segment(stack_cnt,  ceq1_num) = ubAeq1;
+    stack_cnt = stack_cnt + ceq1_num;
 
-    // A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = Aeq2;
-    // lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbAeq2;
-    // ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubAeq2;
-    // stack_cnt = stack_cnt + 2;
+    A.block(stack_cnt, 0,   cineq1_num, (state_length + input_length) * n_phi) = A1;
+    lbA.segment(stack_cnt,  cineq1_num) = lbA1;
+    ubA.segment(stack_cnt,  cineq1_num) = ubA1;
+    stack_cnt = stack_cnt + cineq1_num;
 
-    // A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A1;
-    // lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA1;
-    // ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA1;
-    // stack_cnt = stack_cnt + 2;
+    A.block(stack_cnt, 0,   cineq2_num, (state_length + input_length) * n_phi) = A2;
+    lbA.segment(stack_cnt,  cineq2_num) = lbA2;
+    ubA.segment(stack_cnt,  cineq2_num) = ubA2;
+    stack_cnt = stack_cnt + cineq2_num;
 
-    // A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A2;
-    // lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA2;
-    // ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA2;
-    // stack_cnt = stack_cnt + 2;
+    A.block(stack_cnt, 0,   cineq3_num, (state_length + input_length) * n_phi) = A3;
+    lbA.segment(stack_cnt,  cineq3_num) = lbA3;
+    ubA.segment(stack_cnt,  cineq3_num) = ubA3;
+    stack_cnt = stack_cnt + cineq3_num;
 
-    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A7;
-    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA7;
-    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA7;
-    stack_cnt = stack_cnt + 2;
-
-    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A3;
-    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA3;
-    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA3;
-    stack_cnt = stack_cnt + 2;
-
-    A.block(stack_cnt * n_phi, 0, state_length * n_phi, input_length * n_phi) = A4;
-    lbA.segment(stack_cnt * n_phi, state_length * n_phi) = lbA4;
-    ubA.segment(stack_cnt * n_phi, state_length * n_phi) = ubA4;
-    stack_cnt = stack_cnt + 2;
-
-    A.block(stack_cnt * n_phi, 0, n_phi, input_length * n_phi) = A5;
-    lbA.segment(stack_cnt * n_phi, n_phi) = lbA5;
-    ubA.segment(stack_cnt * n_phi, n_phi) = ubA5;
-    stack_cnt = stack_cnt + 1;
-
-    A.block(stack_cnt * n_phi, 0,  step_constraint_num, input_length * n_phi) = A6;
-    lbA.segment(stack_cnt * n_phi, step_constraint_num) = lbA6;
-    ubA.segment(stack_cnt * n_phi, step_constraint_num) = ubA6;
+    if(stack_cnt != nmpc.total_num_constraint){
+        std::cout << "constraint num doesn't match!" << std::endl;
+    }
 
     if(is_save_init_ == true){
 
@@ -22586,6 +22396,11 @@ void AvatarController::getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::Mat
 }
 
 void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, Eigen::VectorXd &big_M, const double &transition_phase_current_time)
+{
+    std::cout << "Big M referenceWindow function is not used" << std::endl;
+}
+
+void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, const double &transition_phase_current_time)
 {
     DyrosContactScheduler nmpc; 
     
@@ -22626,7 +22441,6 @@ void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::M
     }
     
     int N = 3.0 * mpc_hz;
-    // for (int i = 0; i < nmpc.n_phi; i++){N += T_step_ref_horizon(i) * mpc_hz;}
 
     // From ZMP Planner & Wieber MPC
     Eigen::VectorXd x_zmp_MPC, y_zmp_MPC, x_dcm_MPC, y_dcm_MPC;
@@ -22681,29 +22495,6 @@ void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::M
         }
     }
 
-    if(is_dsp_mpc == true)
-    {
-        for (int i = 0; i < nmpc.n_phi; i++){
-            if(i % 2 == 0){
-                big_M(i) = 0.0;     
-            }
-            else{
-                big_M(i) = 10.0;
-            }
-        }
-    }
-    else if(is_ssp_mpc == true)
-    {
-        for (int i = 0; i < nmpc.n_phi; i++){
-            if(i % 2 == 0){
-                big_M(i) = 10.0; 
-            }
-            else{
-                big_M(i) = 0.0;
-            }
-        }
-    }
-
     KW_graph5_1 << x_com_pos_recur_.transpose() << std::endl;
     KW_graph5_2 << y_com_pos_recur_.transpose() << std::endl;
     KW_graph5_3 << zx_ref.transpose() << std::endl;
@@ -22726,7 +22517,6 @@ void AvatarController::referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::M
         KW_graph8 << T_horizon << " ";
     }
     KW_graph8 << std::endl;
-    KW_graph9 << big_M.transpose() << std::endl;
     KW_graph_nmpc_error << cp_measured_mpc_.transpose() << std::endl;
     KW_graph11 << (p_end_ref_horizon(0,0) - p_init_ref_horizon(0,0)) << " " << (p_end_ref_horizon(1,0) - p_init_ref_horizon(1,0)) << " "
                << (xi_ref_horizon(0, 0) - cp_measured_mpc_(0)) << " " << (xi_ref_horizon(1, 0) - cp_measured_mpc_(1)) << " "

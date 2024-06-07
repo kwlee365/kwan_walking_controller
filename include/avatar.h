@@ -2380,15 +2380,13 @@ public:
     // Contact Schedule Optimization (2024-05-20)
     struct DyrosContactScheduler{
         // PARAM //
-
         const int planning_step_number = 2;
         const int n_phi = 2 * planning_step_number + 1;
         const int n_wp = n_phi + 1;
 
         const int state_length = 2;
-        const int input_length = 9;
-        const int step_constraint_num = 2;  // constraint about dU
-        const int total_num_constraint = 9 * n_phi + step_constraint_num;
+        const int input_length = 5;
+        const int total_num_constraint = 7 * n_phi;
 
         const int nmpc_ctrl_input_num = 5;
 
@@ -2405,10 +2403,10 @@ public:
         double p_c_x_min = safety_factor *(-0.5*Foot_length);
         double p_c_y_min = safety_factor *(-0.5*Foot_width);
 
-        double dU_x_max = 0.2;
-        double dU_y_max = 0.13;
-        double dU_x_min =-0.2;
-        double dU_y_min =-0.03;
+        double dF_x_max = 0.2;
+        double dF_y_max = 0.13;
+        double dF_x_min =-0.2;
+        double dF_y_min =-0.03;
 
         double dT_max = 0.0;
         double dT_SSP_min =-0.35;
@@ -2425,7 +2423,9 @@ public:
     void dcmController_NMPC_DYROS();
     void dcmController_NMPC_DYROS(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
     void referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, Eigen::VectorXd &big_M, const double &transition_phase_current_time);
+    void referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, const double &transition_phase_current_time);
     void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time);
+    void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const double &transition_phase_current_time);
     double cubicBezierPolynomial(double current_time, double start_time, double end_time, double p_init, double p_mid, double p_end);
     double cubicDotBezierPolynomial(double current_time, double start_time, double end_time, double p_init, double p_mid, double p_end);
     void supportFootFrameTransition();

@@ -55,15 +55,14 @@ kp_y_pelv_com : 1.3
 kd_y_pelv_com : 0.05
 
 # Nonlinear DCM MPC
-w_nmpc : [1000,    # time 
+w_nmpc : [100000,      # w_xi_err_x 
+          100000,      # w_xi_err_y
 
-          10000000,       # w_xi_err_x
-          1000,    # w_p_c_x
-          0.1,       # w_dU_x
-          10000000, # w_db_x
-          
-          10000000,       # w_xi_err_y
-          1000,    # w_p_c_y
-          0.1,       # w_dU_y
-          10000000] # w_db_y
+          100,   # w_p_end_x
+          100,   # w_p_end_y
+          100,   # w_p_init_x          
+          100,   # w_p_init_y
+          1000, # w_F_x
+          1000, # w_F_y
+          1]  # w_dT
 
