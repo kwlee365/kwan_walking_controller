@@ -1,7 +1,7 @@
 target_x : 0.0
 target_y : 0.0
 target_z : 0.0
-com_height : 0.73
+com_height : 0.71
 target_theta : 0.0
 step_length_x : 0.0
 step_length_y : 0.0
@@ -11,11 +11,20 @@ t_rest_init : 0.15
 t_rest_last : 0.15 
 t_double1 : 0.05 
 t_double2 : 0.05 
-t_total : 1.0 
-t_total_const : 1.0 
+t_total : 1.1 
+t_total_const : 1.1 
 
 t_ssp : 0.6
-t_dsp : 0.4
+t_dsp : 0.3
 
-foot_height : 0.070
+foot_height : 0.08
 zmp_modif_time_margin : 0.1
+
+# impact simulation
+impact_timing      : 0.5
+impact_duration    : 0.2
+impact_force       : 300
+impact_theta       : 0      # -x :-90
+                            # -y : 0 
+                            #  y : 180
+impact_step_number : 4
