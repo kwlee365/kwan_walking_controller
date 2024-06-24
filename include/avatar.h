@@ -2362,8 +2362,10 @@ public:
     double foot_height_diff_const_zmp_ctrl;
     double kp_x_pelv_com;
     double kp_y_pelv_com;
+    double kp_z_pelv_com;
     double kd_x_pelv_com;
     double kd_y_pelv_com;
+    double kd_z_pelv_com;
     double impact_timing;
     double impact_duration;
     double impact_force;
@@ -2377,6 +2379,8 @@ public:
     Eigen::Vector3d xi_desired_;
     Eigen::Vector3d xi_init_;
     Eigen::VectorXd v_nmpc_;
+    Eigen::VectorXd v_nmpc_prev_
+    ;
     // Contact Schedule Optimization (2024-05-20)
     struct DyrosContactScheduler{
         // PARAM //
@@ -2387,8 +2391,8 @@ public:
 
         const int state_length = 2;
         const int input_length = 9;
-        const int step_constraint_num = 2;  // constraint about dU
-        const int total_num_constraint = 9 * n_phi + step_constraint_num;
+        const int step_constraint_num = 0;  // constraint about dU speed
+        const int total_num_constraint = 11 * n_phi + step_constraint_num;
 
         const int nmpc_ctrl_input_num = 5;
 
@@ -2399,20 +2403,21 @@ public:
         double V_x_max = 1.0; double V_x_min = -1.0;
         double V_y_max = 1.0; double V_y_min = -1.0;
 
-        double safety_factor = 0.7;
-        double p_c_x_max = safety_factor *( 0.5*Foot_length);
-        double p_c_y_max = safety_factor *( 0.5*Foot_width);
-        double p_c_x_min = safety_factor *(-0.5*Foot_length);
-        double p_c_y_min = safety_factor *(-0.5*Foot_width);
+        double safety_factor_x = 0.5;
+        double safety_factor_y = 0.8;
+        double p_c_x_max = safety_factor_x *( 0.5*Foot_length);
+        double p_c_y_max = safety_factor_x *( 0.5*Foot_width);
+        double p_c_x_min = safety_factor_y *(-0.5*Foot_length);
+        double p_c_y_min = safety_factor_y *(-0.5*Foot_width);
 
-        double dU_x_max = 0.2;
-        double dU_y_max = 0.13;
-        double dU_x_min =-0.2;
-        double dU_y_min =-0.03;
+        double dU_x_max = 0.3;
+        double dU_y_max = 0.25 + 0.13;
+        double dU_x_min =-0.3;
+        double dU_y_min = 0.25 - 0.03;
 
         double dT_max = 0.0;
-        double dT_SSP_min =-0.35;
-        double dT_DSP_min =-0.25;
+        double dT_SSP_min =-0.1;    
+        double dT_DSP_min =-0.2;    // (***) dT_min must not be less than T_dsp.
         
         std::string current_path = std::filesystem::current_path().parent_path().string();
         std::string prefix_code  = current_path + "/catkin_ws/src/tocabi_avatar/function/";   // The user should modify this variable your own directory.
@@ -2425,13 +2430,14 @@ public:
     void dcmController_NMPC_DYROS();
     void dcmController_NMPC_DYROS(double del_zmp_x, double del_zmp_y, double del_footstep_x, double del_footstep_y, double dT, double hiptorque_x, double hiptorque_y);
     void referenceWindow(Eigen::MatrixXd &xi_ref_horizon, Eigen::MatrixXd &p_init_ref_horizon, Eigen::MatrixXd &p_end_ref_horizon, Eigen::VectorXd &T_step_ref_horizon, Eigen::VectorXd &big_M, const double &transition_phase_current_time);
-    void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time);
+    void getGradHessDcm_NMPC_CasADi(Eigen::VectorXd &v, Eigen::VectorXd &v_prev, Eigen::MatrixXd &Q, Eigen::VectorXd &p, Eigen::MatrixXd &A, Eigen::VectorXd &lbA, Eigen::VectorXd &ubA, const Eigen::MatrixXd &xi_ref_horizon, const Eigen::MatrixXd &p_init_ref_horizon, const Eigen::MatrixXd &p_end_ref_horizon, const Eigen::VectorXd &T_step_ref_horizon, const Eigen::VectorXd &big_M, const double &transition_phase_current_time);
     double cubicBezierPolynomial(double current_time, double start_time, double end_time, double p_init, double p_mid, double p_end);
     double cubicDotBezierPolynomial(double current_time, double start_time, double end_time, double p_init, double p_mid, double p_end);
     void supportFootFrameTransition();
     void computeIkControl_COM(const Eigen::Vector3d &xCOM_target, Eigen::Isometry3d xPEL_target, const Eigen::Isometry3d &xLF_target, const Eigen::Isometry3d &xRF_target, Eigen::Vector12d &desired_leg_q);
 
     bool nmpc_update_ {false};
+    bool nmpc_update_loop_ {false};
     std::atomic<bool> atb_nmpc_update_{false};
 
     Eigen::VectorXd zx_ref;
