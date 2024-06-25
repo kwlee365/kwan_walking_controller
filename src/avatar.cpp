@@ -15028,13 +15028,13 @@ void AvatarController::getPelvTrajectory()
 
     double z_rot = foot_step_support_frame_(current_step_num_, 5);
 
-    pelv_trajectory_support_.translation()(0) = pelv_support_current_.translation()(0) + 0.7 * (com_desired_(0) - com_support_current_(0)); 
-    pelv_trajectory_support_.translation()(1) = pelv_support_current_.translation()(1) + 0.7 * (com_desired_(1) - com_support_current_(1));  
-    pelv_trajectory_support_.translation()(2) = com_desired_(2);
+    // pelv_trajectory_support_.translation()(0) = pelv_support_current_.translation()(0) + 0.7 * (com_desired_(0) - com_support_current_(0)); 
+    // pelv_trajectory_support_.translation()(1) = pelv_support_current_.translation()(1) + 0.7 * (com_desired_(1) - com_support_current_(1));  
+    // pelv_trajectory_support_.translation()(2) = com_desired_(2);
 
-    // pelv_trajectory_support_.translation()(0) = pelv_support_current_.translation()(0) + 0.0 * (com_desired_(0) - 0*0.15 * damping_x - com_support_current_(0)); 
-    // pelv_trajectory_support_.translation()(1) = pelv_support_current_.translation()(1) + 0.0 * (com_desired_(1) - 0*0.6 * damping_y - com_support_current_(1));  
-    // pelv_trajectory_support_.translation()(2) = pelv_support_current_.translation()(2);
+    pelv_trajectory_support_.translation()(0) = pelv_support_current_.translation()(0) + 0.0 * (com_desired_(0) - com_support_current_(0)); 
+    pelv_trajectory_support_.translation()(1) = pelv_support_current_.translation()(1) + 0.0 * (com_desired_(1) - com_support_current_(1));  
+    pelv_trajectory_support_.translation()(2) = pelv_support_current_.translation()(2);
 
     Eigen::Vector3d Trunk_trajectory_euler;
     Trunk_trajectory_euler.setZero();
@@ -15402,7 +15402,8 @@ void AvatarController::getComTrajectory_mpc()
 
     com_desired_(0) = x_mpc_i_(0);
     com_desired_(1) = y_mpc_i_(0);
-    com_desired_(2) = 0.77172;     
+    // com_desired_(2) = 0.77172;  // pelv_trajectory_support_.translation(2) = com_desired_(2)     
+    com_desired_(2) = 0.736562;  // pelv_trajectory_support_.translation(2) = pelv_support_current_.translation(2)     
             
     com_desired_dot_(0) = x_mpc_i_(1);
     com_desired_dot_(1) = y_mpc_i_(1);
@@ -16985,6 +16986,8 @@ void AvatarController::CamComJacobianWBIK()
     const int control_size_lowerbody_joint = 12;
     const int control_size_joint = control_size_upperbody_joint + control_size_lowerbody_joint;
 
+    bool is_wbik_control_ = true;   // true : control, false: planning
+
     if (is_ik_init_ == true)
     {
         QP_com_jacbian_ik.InitializeProblemSize(variable_size, constraint_size2);
@@ -17119,14 +17122,30 @@ void AvatarController::CamComJacobianWBIK()
     getSelectedCMM_VirtualJoint(cmm_, control_virtual_joint_idx, control_size_joint);
     J_cam_ = cmm_;
 
-    //////////////
-    // Planning //    
-    Vector3d error_v_lfoot = lfoot_trajectory_float_slow_.translation() - lfoot_transform_pre_desired_from_.translation();
-    Vector3d error_w_lfoot = -DyrosMath::getPhi(lfoot_transform_pre_desired_from_.linear(), lfoot_trajectory_float_slow_.linear());
-    Vector3d error_v_rfoot = rfoot_trajectory_float_slow_.translation() - rfoot_transform_pre_desired_from_.translation();
-    Vector3d error_w_rfoot = -DyrosMath::getPhi(rfoot_transform_pre_desired_from_.linear(), rfoot_trajectory_float_slow_.linear());
+    Vector3d error_v_lfoot; error_v_lfoot.setZero();
+    Vector3d error_w_lfoot; error_w_lfoot.setZero();
+    Vector3d error_v_rfoot; error_v_rfoot.setZero();
+    Vector3d error_w_rfoot; error_w_rfoot.setZero();
+    Vector3d error_v_com;   error_v_com.setZero();
 
-    Vector3d error_v_com = com_trajectory_float_slow_ - com_transform_pre_desired_from_;
+    if(is_wbik_control_ == true){
+        // Control //
+        error_v_lfoot = lfoot_trajectory_float_slow_.translation() - lfoot_transform_pre_desired_from_.translation();
+        error_w_lfoot = -DyrosMath::getPhi(lfoot_transform_pre_desired_from_.linear(), lfoot_trajectory_float_slow_.linear());
+        error_v_rfoot = rfoot_trajectory_float_slow_.translation() - rfoot_transform_pre_desired_from_.translation();
+        error_w_rfoot = -DyrosMath::getPhi(rfoot_transform_pre_desired_from_.linear(), rfoot_trajectory_float_slow_.linear());
+
+        error_v_com = com_trajectory_float_slow_ - com_pos_current_;
+    }
+    else{
+        // Planning //    
+        error_v_lfoot = lfoot_trajectory_float_slow_.translation() - lfoot_transform_current_from_global_.translation();
+        error_w_lfoot = -DyrosMath::getPhi(lfoot_transform_current_from_global_.linear(), lfoot_trajectory_float_slow_.linear());
+        error_v_rfoot = rfoot_trajectory_float_slow_.translation() - rfoot_transform_current_from_global_.translation();
+        error_w_rfoot = -DyrosMath::getPhi(rfoot_transform_current_from_global_.linear(), rfoot_trajectory_float_slow_.linear());
+
+        error_v_com = com_trajectory_float_slow_ - com_transform_pre_desired_from_;
+    }
 
     VectorXd u_dot_leg_, u_dot_com_, u_dot_cam_, u_dot_init_;
     u_dot_leg_.setZero(control_size_leg);
@@ -17139,7 +17158,9 @@ void AvatarController::CamComJacobianWBIK()
     u_dot_leg_.segment(6, 3) = rfoot_vel_trajectory_float_slow_.segment(0, 3) + kp_wbik[2] * error_v_rfoot;
     u_dot_leg_.segment(9, 3) = rfoot_vel_trajectory_float_slow_.segment(3, 3) + kp_wbik[3] * error_w_rfoot;
 
-    u_dot_com_ = com_dot_trajectory_float_fast_ + kp_wbik[4] * error_v_com;
+    u_dot_com_(0) = com_dot_trajectory_float_fast_(0) + kp_wbik[4] * error_v_com(0);
+    u_dot_com_(1) = com_dot_trajectory_float_fast_(1) + kp_wbik[5] * error_v_com(1);
+    u_dot_com_(2) = com_dot_trajectory_float_fast_(2) + kp_wbik[6] * error_v_com(2);
 
     // u_dot_cam_.setZero();
     u_dot_cam_ = del_ang_momentum_slow_;
@@ -17429,6 +17450,6 @@ void AvatarController::getParameterYAML()
     for (int i = 0; i < 6; i++) { std::cout << "w_wbik" << i << ": " << w_wbik[i] << std::endl;}
 
     ros::param::get("/tocabi_controller/kp_wbik", kp_wbik);
-    for (int i = 0; i < 5; i++) { std::cout << "kp_wbik" << i << ": " << kp_wbik[i] << std::endl;}
+    for (int i = 0; i < 7; i++) { std::cout << "kp_wbik" << i << ": " << kp_wbik[i] << std::endl;}
 
 }
