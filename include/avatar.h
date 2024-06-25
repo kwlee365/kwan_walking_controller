@@ -1497,12 +1497,12 @@ public:
     Eigen::Vector3d lfoot_trajectory_euler_support_;
 
     Eigen::Isometry3d pelv_trajectory_float_; //pelvis frame
-    Eigen::Isometry3d rfoot_trajectory_float_;
-    Eigen::Isometry3d lfoot_trajectory_float_;
 
+    Eigen::Isometry3d lfoot_trajectory_float_;
     Eigen::Isometry3d lfoot_trajectory_float_fast_;
     Eigen::Isometry3d lfoot_trajectory_float_slow_;
 
+    Eigen::Isometry3d rfoot_trajectory_float_;
     Eigen::Isometry3d rfoot_trajectory_float_fast_;
     Eigen::Isometry3d rfoot_trajectory_float_slow_;
 
@@ -1745,6 +1745,47 @@ public:
 
     Eigen::VectorQd q_mj;
     Eigen::VectorQd q_mj_prev;
+
+    // KW add (WBIK)
+    void getParameterYAML();
+    void CamComJacobianWBIK();
+    void getSelectedCMM_VirtualJoint(Eigen::MatrixXd &cmm_selected, int joint_idx[], const int joint_dim);
+    void getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM);
+    void getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_, int collision_pair);
+    double getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB);
+    
+    std::vector<double> w_wbik;
+    std::vector<double> kp_wbik;
+
+    CQuadraticProgram QP_com_jacbian_ik;
+    bool is_ik_init_ = true;
+
+    Eigen::Vector3d com_desired_dot_;
+
+    Eigen::Vector3d com_trajectory_float_;
+    Eigen::Vector3d com_trajectory_float_fast_;
+    Eigen::Vector3d com_trajectory_float_slow_;
+
+    Eigen::Vector3d com_dot_trajectory_float_;
+    Eigen::Vector3d com_dot_trajectory_float_fast_;
+    Eigen::Vector3d com_dot_trajectory_float_slow_;
+
+    Eigen::Vector3d com_transform_pre_desired_from_;
+
+    Eigen::Vector6d rfoot_vel_trajectory_support_;
+    Eigen::Vector6d rfoot_vel_trajectory_float_;
+    Eigen::Vector6d rfoot_vel_trajectory_float_fast_;
+    Eigen::Vector6d rfoot_vel_trajectory_float_slow_;
+
+    Eigen::Vector6d lfoot_vel_trajectory_support_;
+    Eigen::Vector6d lfoot_vel_trajectory_float_;
+    Eigen::Vector6d lfoot_vel_trajectory_float_fast_;
+    Eigen::Vector6d lfoot_vel_trajectory_float_slow_;
+
+    // etc
+    Eigen::Vector3d rot2angvel(const Eigen::Matrix3d &rot_des);
+    Eigen::Vector3d lie_vee(const Eigen::Matrix3d &rot);
+
 private:    
     //////////////////////////////// Myeong-Ju
     unsigned int walking_tick_mj = 0;
