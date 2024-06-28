@@ -1,15 +1,27 @@
 # WBIK
 w_wbik : [100.0,       # Foot 
           1.0,         # CoM
-          0.01,        # CAM
+          0.02,        # CAM
           0.0008,      # Initial Pose Return
           0.000001,    # Joint velocity regulation
           0.00000001]  # Joint accleration regulation
+
+w_hqp_wbik1 : [100.0,     # Foot
+               1.0,       # COM
+               0.01,      # CAM
+               0.0001,    # Joint vel
+               0.0000001]  # Joint acc
+
+w_hqp_wbik2 : [1.0,       # Initial pose return
+               0.001,     # Joint vel
+               0.000001]   # Joint acc
 
 kp_wbik : [30.0,       # v lfoot
            10.0,       # w lfoot     
            30.0,       # v rfoot
            10.0,       # w rfoot
-           20.0,       # vx com
+           40.0,       # vx com
            50.0,       # vy com
-           20.0]       # vz com
+           50.0]       # vz com
+
+eps_ : 0.4

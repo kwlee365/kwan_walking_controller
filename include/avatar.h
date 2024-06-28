@@ -1749,15 +1749,32 @@ public:
     // KW add (WBIK)
     void getParameterYAML();
     void CamComJacobianWBIK();
+    void HqpCamComJacobianWBIK();
     void getSelectedCMM_VirtualJoint(Eigen::MatrixXd &cmm_selected, int joint_idx[], const int joint_dim);
     void getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM);
     void getSelfCollisionAvoidanceMatrix(Eigen::MatrixXd &J_, Eigen::VectorXd &h_, int collision_pair);
     double getSignedDistanceFunction(LinkData &linkA_, LinkData &linkB_, double radiusA_, double radiusB_, Eigen::MatrixXd &J_AB);
-    
+    void CalcVirtualCMM(Eigen::MatrixXd &cmm);
+
     std::vector<double> w_wbik;
+    std::vector<double> w_hqp_wbik1;
+    std::vector<double> w_hqp_wbik2;
+    std::vector<double> w_hqp_cam;
     std::vector<double> kp_wbik;
 
+    double eps_;
+
     CQuadraticProgram QP_com_jacbian_ik;
+    std::vector<CQuadraticProgram> HQP_jacobian_ik;
+
+    Eigen::MatrixXd H_hqp[2], A_hqp[2];
+    Eigen::VectorXd g_hqp[2], ubA_hqp[2], lbA_hqp[2], ub_hqp[2], lb_hqp[2];
+    Eigen::MatrixXd J_hqp[4];
+    Eigen::VectorXd u_dot_hqp[4];
+
+    Eigen::VectorXd q_dot_hqp[2];
+    Eigen::VectorXd q_dot_hqp_temp;
+
     bool is_ik_init_ = true;
 
     Eigen::Vector3d com_desired_dot_;

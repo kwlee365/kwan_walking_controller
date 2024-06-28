@@ -25,7 +25,10 @@ ofstream MJ_graph_foottra_y("/home/myeongju/MJ_graph_foottra_y.txt");
 
 // KW add
 ofstream KW_graph1_1("/home/kwan/data/tocabi/KW_graph1-1.txt"); // ZMP, COM, CP, Foot traj w.r.t Support foot 
-
+ofstream KW_graph_wbik1("/home/kwan/data/tocabi/KW_graph_wbik1.txt"); 
+ofstream KW_graph_wbik2("/home/kwan/data/tocabi/KW_graph_wbik2.txt"); 
+ofstream KW_graph_wbik3("/home/kwan/data/tocabi/KW_graph_wbik3.txt"); 
+ofstream KW_graph_jaco("/home/kwan/data/tocabi/KW_graph_jaco.txt"); 
 AvatarController::AvatarController(RobotData &rd) : rd_(rd)
 {
     nh_avatar_.setCallbackQueue(&queue_avatar_);
@@ -527,6 +530,9 @@ void AvatarController::setGains()
     ///////////////////////////////
 
     //arm controller
+
+    /////////////////////
+    // JOINT POS LIMIT //
     joint_limit_l_.resize(33);
     joint_limit_h_.resize(33);
     joint_vel_limit_l_.resize(33);
@@ -539,27 +545,27 @@ void AvatarController::setGains()
         joint_limit_h_(i) = 180 * DEG2RAD;
     }
 
-    joint_limit_l_(3) = 5 * DEG2RAD;     // Left knee pitch
+    joint_limit_l_(3) = 10 * DEG2RAD;     // Left knee pitch
     joint_limit_h_(3) = 110 * DEG2RAD;   // Left knee pitch
-    joint_limit_l_(9) = 5 * DEG2RAD;     // Right knee pitch
+    joint_limit_l_(9) = 10 * DEG2RAD;     // Right knee pitch
     joint_limit_h_(9) = 110 * DEG2RAD;   // Right knee pitch
 
     //WAIST
     joint_limit_l_(12) = -30 * DEG2RAD;
     joint_limit_h_(12) = 30 * DEG2RAD;
-    joint_limit_l_(13) = -15 * DEG2RAD;
+    joint_limit_l_(13) = -20 * DEG2RAD;
     joint_limit_h_(13) = 30 * DEG2RAD;
-    joint_limit_l_(14) = -15 * DEG2RAD;
-    joint_limit_h_(14) = 15 * DEG2RAD;
+    joint_limit_l_(14) = -20 * DEG2RAD;
+    joint_limit_h_(14) = 30 * DEG2RAD;
     //LEFT ARM
     joint_limit_l_(15) = -30 * DEG2RAD;
-    joint_limit_h_(15) = 30 * DEG2RAD;
-    joint_limit_l_(16) = -160 * DEG2RAD;
-    joint_limit_h_(16) = 70 * DEG2RAD;
-    joint_limit_l_(17) = -95 * DEG2RAD;
-    joint_limit_h_(17) = 95 * DEG2RAD;
-    joint_limit_l_(18) = -180 * DEG2RAD;
-    joint_limit_h_(18) = 180 * DEG2RAD;
+    joint_limit_h_(15) = 20 * DEG2RAD;
+    joint_limit_l_(16) = -50 * DEG2RAD;
+    joint_limit_h_(16) = 50 * DEG2RAD;
+    joint_limit_l_(17) = 45 * DEG2RAD;
+    joint_limit_h_(17) = 65 * DEG2RAD;
+    joint_limit_l_(18) = -90 * DEG2RAD;
+    joint_limit_h_(18) = -65 * DEG2RAD;
     joint_limit_l_(19) = -150 * DEG2RAD;
     joint_limit_h_(19) = -10 * DEG2RAD;
     joint_limit_l_(20) = -180 * DEG2RAD;
@@ -574,14 +580,14 @@ void AvatarController::setGains()
     joint_limit_l_(24) = -40 * DEG2RAD;
     joint_limit_h_(24) = 30 * DEG2RAD;
     //RIGHT ARM
-    joint_limit_l_(25) = -30 * DEG2RAD;
+    joint_limit_l_(25) = -20 * DEG2RAD;
     joint_limit_h_(25) = 30 * DEG2RAD;
-    joint_limit_l_(26) = -70 * DEG2RAD;
-    joint_limit_h_(26) = 160 * DEG2RAD;
-    joint_limit_l_(27) = -95 * DEG2RAD;
-    joint_limit_h_(27) = 95 * DEG2RAD;
-    joint_limit_l_(28) = -180 * DEG2RAD;
-    joint_limit_h_(28) = 180 * DEG2RAD;
+    joint_limit_l_(26) = -50 * DEG2RAD;
+    joint_limit_h_(26) = 50 * DEG2RAD;
+    joint_limit_l_(27) = -65 * DEG2RAD;
+    joint_limit_h_(27) = -45 * DEG2RAD;
+    joint_limit_l_(28) = 65 * DEG2RAD;
+    joint_limit_h_(28) = 90 * DEG2RAD;
     joint_limit_l_(29) = 10 * DEG2RAD;
     joint_limit_h_(29) = 150 * DEG2RAD;
     joint_limit_l_(30) = -180 * DEG2RAD;
@@ -591,6 +597,8 @@ void AvatarController::setGains()
     joint_limit_l_(32) = -60 * DEG2RAD;
     joint_limit_h_(32) = 60 * DEG2RAD;
 
+    /////////////////////
+    // JOINT VEL LIMIT //
     //LEG
     for (int i = 0; i < 12; i++)
     {
@@ -598,37 +606,41 @@ void AvatarController::setGains()
         joint_vel_limit_h_(i) = 2 * M_PI;
     }
 
+    // joint_vel_limit_l_(3) =-M_PI / 1.5;   // Left knee pitch
+    // joint_vel_limit_h_(3) = M_PI / 1.5;   // Left knee pitch
+    // joint_vel_limit_l_(9) =-M_PI / 1.5;   // Right knee pitch
+    // joint_vel_limit_h_(9) = M_PI / 1.5;   // Right knee pitch
 
     //UPPERBODY
     for (int i = 12; i < 33; i++)
     {
-        joint_vel_limit_l_(i) = -M_PI * 1.5; // *2
-        joint_vel_limit_h_(i) = M_PI * 1.5; // *2
+        joint_vel_limit_l_(i) = 0.0; // *2
+        joint_vel_limit_h_(i) = 0.0; // *2
     }
 
-    // joint_vel_limit_l_(13) = -M_PI * 3;
-    // joint_vel_limit_h_(13) = M_PI * 3;
-    // joint_vel_limit_l_(14) = -M_PI * 3;
-    // joint_vel_limit_h_(14) = M_PI * 3;
+    joint_vel_limit_l_(13) =-M_PI / 5.0;
+    joint_vel_limit_h_(13) = M_PI / 5.0;
+    joint_vel_limit_l_(14) =-M_PI / 5.0;
+    joint_vel_limit_h_(14) = M_PI / 5.0;
 
     //1st arm joint vel limit
-    joint_vel_limit_l_(15) = -M_PI / 3;
-    joint_vel_limit_h_(15) = M_PI / 3;
+    joint_vel_limit_l_(15) =-M_PI / 3.0;
+    joint_vel_limit_h_(15) = M_PI / 3.0;
+    joint_vel_limit_l_(16) =-M_PI / 3.0;
+    joint_vel_limit_h_(16) = M_PI / 3.0;
+    joint_vel_limit_l_(17) =-M_PI / 3.0;
+    joint_vel_limit_h_(17) = M_PI / 3.0;
+    joint_vel_limit_l_(18) =-M_PI / 3.0;
+    joint_vel_limit_h_(18) = M_PI / 3.0;
 
-    joint_vel_limit_l_(25) = -M_PI / 3;
-    joint_vel_limit_h_(25) = M_PI / 3;
-
-    // Head joint vel limit
-    joint_vel_limit_l_(23) = -2 * M_PI;
-    joint_vel_limit_h_(23) = 2 * M_PI;
-    joint_vel_limit_l_(24) = -2 * M_PI;
-    joint_vel_limit_h_(24) = 2 * M_PI;
-
-    // forearm joint vel limit
-    joint_vel_limit_l_(20) = -1.3 * M_PI; // 2 *
-    joint_vel_limit_h_(20) = 1.3 * M_PI; // 2 *
-    joint_vel_limit_l_(30) = -1.3 * M_PI; // 2 *
-    joint_vel_limit_h_(30) = 1.3 * M_PI; // 2 *
+    joint_vel_limit_l_(25) =-M_PI / 3.0;
+    joint_vel_limit_h_(25) = M_PI / 3.0;
+    joint_vel_limit_l_(26) =-M_PI / 3.0;
+    joint_vel_limit_h_(26) = M_PI / 3.0;
+    joint_vel_limit_l_(27) =-M_PI / 3.0;
+    joint_vel_limit_h_(27) = M_PI / 3.0;
+    joint_vel_limit_l_(28) =-M_PI / 3.0;
+    joint_vel_limit_h_(28) = M_PI / 3.0;
 }
 
 Eigen::VectorQd AvatarController::getControl()
@@ -662,6 +674,7 @@ void AvatarController::computeSlow()
                 Initial_ref_upper_q_(i) = ref_q_(i);
             }
             
+            CAM_upper_init_q_ = Initial_ref_upper_q_;
             CAM_upper_init_q_(15) = + 15.0 * DEG2RAD; // Left Shoulder Yaw joint // 17 deg
             CAM_upper_init_q_(16) = + 10.0 * DEG2RAD; // Left Shoulder Pitch joint // 17 deg
             CAM_upper_init_q_(17) = + 65.0 * DEG2RAD; // Left Shoulder Roll joint // 86 deg
@@ -698,18 +711,11 @@ void AvatarController::computeSlow()
         // edited by MJ (Initial upper body trajectory generation for CAM control /220110)
         if(initial_tick_mj <= 2.0 * hz_)
         {
-            ref_q_(15) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(15), CAM_upper_init_q_(15), 0.0, 0.0); // Left Shoulder Yaw joint
-            ref_q_(16) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(16), CAM_upper_init_q_(16), 0.0, 0.0); // Left Shoulder Pitch joint
-            ref_q_(17) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(17), CAM_upper_init_q_(17), 0.0, 0.0); // Left Shoulder Roll joint
-            ref_q_(18) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(18), CAM_upper_init_q_(18), 0.0, 0.0); // Left Elbow Yaw joint
-            ref_q_(19) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(19), CAM_upper_init_q_(19), 0.0, 0.0);  // Left Elbow Pitch joint
-            
-            ref_q_(25) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(25), CAM_upper_init_q_(25), 0.0, 0.0); // Right Shoulder Yaw joint
-            ref_q_(26) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(26), CAM_upper_init_q_(26), 0.0, 0.0); // Right Shoulder Pitch joint  
-            ref_q_(27) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(27), CAM_upper_init_q_(27), 0.0, 0.0); // Right Shoulder Roll joint 
-            ref_q_(28) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(28), CAM_upper_init_q_(28), 0.0, 0.0); // Right Elbow Yaw joint
-            ref_q_(29) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(29), CAM_upper_init_q_(29), 0.0, 0.0); // Right Elbow Pich joint  
-                        
+            for (int i = 12; i < MODEL_DOF; i++)
+            {
+                ref_q_(i) = DyrosMath::cubic(initial_tick_mj, 0, 2.0 * hz_, Initial_ref_upper_q_(i), CAM_upper_init_q_(i), 0.0, 0.0); // Left Shoulder Yaw joint
+            }
+ 
             initial_tick_mj ++;         
         }
         
@@ -1327,7 +1333,8 @@ void AvatarController::computeFast()
         // computeCAMcontrol_HQP();
 
         // KW add (WBIK)
-        CamComJacobianWBIK();
+        // CamComJacobianWBIK();
+        HqpCamComJacobianWBIK();
         
          
         for (int i = 0; i < MODEL_DOF; i++)
@@ -15403,7 +15410,7 @@ void AvatarController::getComTrajectory_mpc()
     com_desired_(0) = x_mpc_i_(0);
     com_desired_(1) = y_mpc_i_(0);
     // com_desired_(2) = 0.77172;  // pelv_trajectory_support_.translation(2) = com_desired_(2)     
-    com_desired_(2) = 0.736562;  // pelv_trajectory_support_.translation(2) = pelv_support_current_.translation(2)     
+    com_desired_(2) = 0.734854;  // pelv_trajectory_support_.translation(2) = pelv_support_current_.translation(2)     
             
     com_desired_dot_(0) = x_mpc_i_(1);
     com_desired_dot_(1) = y_mpc_i_(1);
@@ -16977,10 +16984,10 @@ void AvatarController::CamComJacobianWBIK()
 {
     const int variable_size = MODEL_DOF_VIRTUAL;
     const int constraint_size1 = MODEL_DOF_VIRTUAL;     //[lb <=	x	<= 	ub] form constraints    -> joint velocity limit
-    const int constraint_size2 = 3;     //[lbA <=	Ax 	<=	ubA] from constraints   -> collision avoidance
+    const int constraint_size2 = MODEL_DOF_VIRTUAL;     //[lbA <=	Ax 	<=	ubA]  : Joint pos, vel limits
     const int control_size_com = 3;
     const int control_size_leg = 12;
-    const int control_size_cam = 3;
+    const int control_size_cam = 2;
 
     const int control_size_upperbody_joint = 10;
     const int control_size_lowerbody_joint = 12;
@@ -17096,14 +17103,23 @@ void AvatarController::CamComJacobianWBIK()
     MatrixXd J_leg_, J_com_, J_cam_, J_init_;
 
     J_leg_.setZero(control_size_leg, variable_size);
-    J_temp_.setZero(6, MODEL_DOF_VIRTUAL);
-    RigidBodyDynamics::CalcPointJacobian6D(model_d_, pre_desired_q_qvqd_, rd_.link_[Left_Foot].id, Eigen::Vector3d::Zero(), J_temp_, false);
-    J_leg_.block(0, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(3, 0, 3, MODEL_DOF_VIRTUAL);
-    J_leg_.block(3, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(0, 0, 3, MODEL_DOF_VIRTUAL);
-    J_temp_.setZero(6, MODEL_DOF_VIRTUAL);
-    RigidBodyDynamics::CalcPointJacobian6D(model_d_, pre_desired_q_qvqd_, rd_.link_[Right_Foot].id, Eigen::Vector3d::Zero(), J_temp_, false);
-    J_leg_.block(6, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(3, 0, 3, MODEL_DOF_VIRTUAL);
-    J_leg_.block(9, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    J_temp_.setZero(3, MODEL_DOF_VIRTUAL);
+
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Left_Foot].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(0, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Left_Foot].Jac().block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(3, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    // RigidBodyDynamics::CalcPointJacobian6D(model_d_, pre_desired_q_qvqd_, rd_.link_[Left_Foot].id, Eigen::Vector3d::Zero(), J_temp_, false);
+    // J_leg_.block(0, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    // J_leg_.block(3, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Right_Foot].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(6, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Right_Foot].Jac().block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(9, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    // RigidBodyDynamics::CalcPointJacobian6D(model_d_, pre_desired_q_qvqd_, rd_.link_[Right_Foot].id, Eigen::Vector3d::Zero(), J_temp_, false);
+    // J_leg_.block(6, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    // J_leg_.block(9, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_.block(0, 0, 3, MODEL_DOF_VIRTUAL);
 
     J_com_.setZero(control_size_com, variable_size);
     J_com_ = pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[COM_id].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
@@ -17119,8 +17135,10 @@ void AvatarController::CamComJacobianWBIK()
     // Centroidal Momentum Matrix
     J_cam_.setZero(control_size_cam, variable_size);
     Eigen::MatrixXd cmm_;
-    getSelectedCMM_VirtualJoint(cmm_, control_virtual_joint_idx, control_size_joint);
-    J_cam_ = cmm_;
+    // getSelectedCMM_VirtualJoint(cmm_, control_virtual_joint_idx, control_size_joint);
+    // J_cam_ = cmm_.block(0, 0, control_size_cam, variable_size);
+    CalcVirtualCMM(cmm_);
+    J_cam_ = (pelv_yaw_rot_current_from_global_.transpose() * cmm_).block(0, 0, control_size_cam, variable_size);
 
     Vector3d error_v_lfoot; error_v_lfoot.setZero();
     Vector3d error_w_lfoot; error_w_lfoot.setZero();
@@ -17163,7 +17181,7 @@ void AvatarController::CamComJacobianWBIK()
     u_dot_com_(2) = com_dot_trajectory_float_fast_(2) + kp_wbik[6] * error_v_com(2);
 
     // u_dot_cam_.setZero();
-    u_dot_cam_ = del_ang_momentum_slow_;
+    u_dot_cam_ = del_ang_momentum_slow_.segment(0, control_size_cam);
 
     for (int i = 0; i < control_size_upperbody_joint; i++)
     {
@@ -17172,7 +17190,6 @@ void AvatarController::CamComJacobianWBIK()
 
     // Gain scheduiling //
     double w4_temp = DyrosMath::cubic(u_dot_cam_.head(2).norm(), 0.0, 1.0, 1.0, w_wbik[3], 0.0, 0.0);
-    // double w4_temp = 1.0;
     for(int i = 0; i < control_size_upperbody_joint; i++)
     {
         w4(control_upperbody_virtual_joint_idx[i], control_upperbody_virtual_joint_idx[i]) = w4_temp;
@@ -17199,56 +17216,82 @@ void AvatarController::CamComJacobianWBIK()
     H3 = J_cam_.transpose() * J_cam_;
     H4 = J_init_.transpose() * J_init_;
     H5.setIdentity(variable_size, variable_size);
-    H6 = Eigen::MatrixXd::Identity(variable_size, variable_size) * (2000) * (2000);
+    H6 = Eigen::MatrixXd::Identity(variable_size, variable_size) / (dt_ * dt_);
 
     g1 = -J_leg_.transpose() * u_dot_leg_;
     g2 = -J_com_.transpose() * u_dot_com_;
     g3 = -J_cam_.transpose() * u_dot_cam_;
     g4 = -J_init_.transpose() * u_dot_init_;
     g5.setZero(variable_size);
-    g6.segment(6, MODEL_DOF) = -motion_q_dot_pre_.segment(0, MODEL_DOF) * (2000) * (2000);
+    g6.segment(6, MODEL_DOF) = -motion_q_dot_pre_.segment(0, MODEL_DOF) / (dt_ * dt_);
 
     ////////////////////////////////////////////////////////////
     H = w1 * H1 + w2 * H2 + w3 * H3 + w4 * H4 + w5 * H5 + w6 * H6;
     g = w1 * g1 + w2 * g2 + w3 * g3 + w4 * g4 + w5 * g5 + w6 * g6;
 
+    /* Collision Avoidance Constraints
     // lb <= x <= ub
+    // double speed_reduce_rate = 20; // when the current joint position is near joint limit (10 degree), joint limit condition is activated.
+    // for (int i = 0; i < constraint_size1; i++)
+    // {
+    //     if (i < 6)
+    //     {
+    //         lb(i) = -10;
+    //         ub(i) =  10;
+    //     }
+    //     else
+    //     {
+    //         int j = i - 6;
+
+    //         lb(i) = min(max(speed_reduce_rate * (joint_limit_l_(j) - motion_q_pre_(j)),
+    //                         joint_vel_limit_l_(j)),
+    //                         joint_vel_limit_h_(j));
+    //         ub(i) = max(min(speed_reduce_rate * (joint_limit_h_(j) - motion_q_pre_(j)),
+    //                         joint_vel_limit_h_(j)),
+    //                         joint_vel_limit_l_(j));
+    //     }
+    // }
+
+    // lbA <= Ax <= ubA
+    // Self Collision Avoidance Algorithm
+    // Eigen::MatrixXd A_sca;
+    // Eigen::VectorXd h_sca;
+    // getSelfCollisionAvoidanceMatrix(A_sca, h_sca, constraint_size2);
+
+    // A.setZero(constraint_size2, variable_size);
+    // A = A_sca;
+    
+    // double sca_gain = 10.0; // if the gain is too high, QP will not be solved. -> 'QP SOLVE FAILED'
+
+    // for (int i = 0; i < constraint_size2; i++)
+    // {
+    //     lbA(i) = -sca_gain * h_sca(i);
+    //     ubA(i) = 1e8;
+    // }
+    */
+
+    /* Only joint limit constraints */
+    A.setIdentity(constraint_size2, variable_size);
+
     double speed_reduce_rate = 20; // when the current joint position is near joint limit (10 degree), joint limit condition is activated.
-    for (int i = 0; i < constraint_size1; i++)
+    for (int i = 0; i < constraint_size2; i++)
     {
         if (i < 6)
         {
-            lb(i) = -10;
-            ub(i) =  10;
+            lbA(i) = -100;  // (***) TODO: How can I limit
+            ubA(i) =  100;
         }
         else
         {
             int j = i - 6;
 
-            lb(i) = min(max(speed_reduce_rate * (joint_limit_l_(j) - motion_q_pre_(j)),
+            lbA(i) = min(max(speed_reduce_rate * (joint_limit_l_(j) - motion_q_pre_(j)),
                             joint_vel_limit_l_(j)),
                             joint_vel_limit_h_(j));
-            ub(i) = max(min(speed_reduce_rate * (joint_limit_h_(j) - motion_q_pre_(j)),
+            ubA(i) = max(min(speed_reduce_rate * (joint_limit_h_(j) - motion_q_pre_(j)),
                             joint_vel_limit_h_(j)),
                             joint_vel_limit_l_(j));
         }
-    }
-
-    // lbA <= Ax <= ubA
-    // Self Collision Avoidance Algorithm
-    Eigen::MatrixXd A_sca;
-    Eigen::VectorXd h_sca;
-    getSelfCollisionAvoidanceMatrix(A_sca, h_sca, constraint_size2);
-
-    A.setZero(constraint_size2, variable_size);
-    A = A_sca;
-    
-    double sca_gain = 10.0; // if the gain is too high, QP will not be solved. -> 'QP SOLVE FAILED'
-
-    for (int i = 0; i < constraint_size2; i++)
-    {
-        lbA(i) = -sca_gain * h_sca(i);
-        ubA(i) = 1e8;
     }
 
     
@@ -17256,7 +17299,7 @@ void AvatarController::CamComJacobianWBIK()
     QP_com_jacbian_ik.UpdateMinProblem(H, g);
     QP_com_jacbian_ik.DeleteSubjectToAx();
     QP_com_jacbian_ik.UpdateSubjectToAx(A, lbA, ubA);
-    QP_com_jacbian_ik.UpdateSubjectToX(lb, ub);
+    // QP_com_jacbian_ik.UpdateSubjectToX(lb, ub);
 
     VectorXd q_dot_;
     VectorXd q_opt_;
@@ -17278,7 +17321,399 @@ void AvatarController::CamComJacobianWBIK()
         pd_control_mask_(control_joint_idx[i]) = 1;
     }
 
-    // KW_graph_wbik << (J_leg_ * q_dot_).transpose() << " " << u_dot_leg_.transpose() << " " << (J_com_ * q_dot_).transpose() << " " << u_dot_com_.transpose() << " " << (J_cam_ * q_dot_).transpose() << " " << u_dot_cam_.transpose() << std::endl;
+    Eigen::VectorXd q_dot_upper, q_dot_lower, q_dot_virtual;
+    q_dot_upper.setZero(MODEL_DOF_VIRTUAL);
+    q_dot_lower.setZero(MODEL_DOF_VIRTUAL);
+    q_dot_virtual.setZero(MODEL_DOF_VIRTUAL);
+
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+        q_dot_upper(control_upperbody_virtual_joint_idx[i]) = q_dot_(control_upperbody_virtual_joint_idx[i]);
+    for (int i = 0; i < control_size_lowerbody_joint; i++)
+        q_dot_lower(control_lowerbody_virtual_joint_idx[i]) = q_dot_(control_lowerbody_virtual_joint_idx[i]);
+    for (int i = 0; i < 6; i++)
+        q_dot_virtual(i) =  q_dot_(i);
+
+    KW_graph_wbik3 << del_ang_momentum_slow_.segment(0, control_size_cam).transpose() << " " << (J_cam_ * q_dot_).transpose() << " " 
+                  << (J_cam_ * q_dot_upper).transpose() << " " << (J_cam_ * q_dot_lower).transpose() << " " << (J_cam_ * q_dot_virtual).transpose() << std::endl; 
+}
+
+void AvatarController::HqpCamComJacobianWBIK()
+{
+    /* PARAMETER */ 
+    const int hierarchy_num = 2;
+    
+    const int variable_size       = MODEL_DOF_VIRTUAL;
+    const int control_size_leg    = 12;
+    const int control_size_com    = 3;
+    const int control_size_cam    = 2;                      // Pitch, Roll
+
+    const int constraint_size1    = MODEL_DOF_VIRTUAL;      // [lb <= x	<= ub] : Joint pos, vel limits
+    const int constraint_size2[hierarchy_num] ={0, control_size_leg + control_size_com + control_size_cam};                  
+
+    const int control_size_upperbody_joint = 21;
+    const int control_size_lowerbody_joint = 12;
+    const int control_size_joint = control_size_upperbody_joint + control_size_lowerbody_joint;
+
+    bool is_wbik_control_ = true;   // true : control, false: planning
+
+    /* INITIALIZATION */ 
+    if (is_ik_init_ == true)
+    {
+        HQP_jacobian_ik.resize(hierarchy_num);
+
+        for(int i = 0; i < hierarchy_num; i++){
+            HQP_jacobian_ik[i].InitializeProblemSize(variable_size, constraint_size2[i]);
+
+            A_hqp[i].setZero(constraint_size2[i], variable_size);
+            ubA_hqp[i].setZero(constraint_size2[i]);
+            lbA_hqp[i].setZero(constraint_size2[i]);
+
+            H_hqp[i].setZero(variable_size, variable_size);
+            g_hqp[i].setZero(variable_size);
+
+            ub_hqp[i].setZero(constraint_size1);
+            lb_hqp[i].setZero(constraint_size1);
+
+            q_dot_hqp[i].setZero(variable_size);
+        }
+            
+        lfoot_trajectory_float_fast_ = lfoot_transform_pre_desired_from_;
+        rfoot_trajectory_float_fast_ = rfoot_transform_pre_desired_from_;
+        lfoot_trajectory_float_slow_ = lfoot_transform_pre_desired_from_;
+        rfoot_trajectory_float_slow_ = rfoot_transform_pre_desired_from_;
+
+        com_trajectory_float_slow_ = com_transform_pre_desired_from_;
+
+        last_solved_hierarchy_num_camhqp_ = -1;
+
+        std::cout << "HQP based WBIK Initialization Complete!!!" << std::endl;
+
+        is_ik_init_ = false;
+    }
+
+    /* JOINT INDEX */
+    int control_joint_idx[control_size_joint] = {
+        // from "tocabi.h"
+        // Lower body
+        0,  // L_HipYaw_Joint
+        1,  // L_HipRoll_Joint
+        2,  // L_HipPitch_Joint
+        3,  // L_Knee_Joint
+        4,  // L_AnklePitch_Joint
+        5,  // L_AnkleRoll_Joint
+        6,  // R_HipYaw_Joint
+        7,  // R_HipRoll_Joint
+        8,  // R_HipPitch_Joint
+        9,  // R_Knee_Joint
+        10, // R_AnklePitch_Joint
+        11, // R_AnkleRoll_Joint
+
+        // Upper body
+        12, // waist yaw
+        13, // waist pitch
+        14, // waist roll
+
+        15, // left shoulder yaw
+        16, // left shoulder pitch
+        17, // left shoulder roll
+        18, // left elbow yaw
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+
+        25, // right shoulder yaw
+        26, // right shoulder pitch
+        27, // right shoulder roll
+        28, // right elbow yaw 
+        29,
+        30,
+        31,
+        32
+    };
+
+    int control_virtual_joint_idx[control_size_joint] = {0,};
+    for (int i = 0; i < control_size_joint; i++)
+    {
+        control_virtual_joint_idx[i] = control_joint_idx[i] + 6;
+    }
+
+    int control_upperbody_joint_idx[control_size_upperbody_joint] = {
+        // Upper body
+        12, // waist yaw
+        13, // waist pitch
+        14, // waist roll
+
+        15, // left shoulder yaw
+        16, // left shoulder pitch
+        17, // left shoulder roll
+        18, // left elbow yaw
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+
+        25, // right shoulder yaw
+        26, // right shoulder pitch
+        27, // right shoulder roll
+        28, // right elbow yaw 
+        29,
+        30,
+        31,
+        32
+    };
+
+    int control_upperbody_virtual_joint_idx[control_size_upperbody_joint] = {0,};
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+    {
+        control_upperbody_virtual_joint_idx[i] = control_upperbody_joint_idx[i] + 6;
+    }
+
+    int control_lowerbody_joint_idx[control_size_lowerbody_joint] = {
+        0,  // L_HipYaw_Joint
+        1,  // L_HipRoll_Joint
+        2,  // L_HipPitch_Joint
+        3,  // L_Knee_Joint
+        4,  // L_AnklePitch_Joint
+        5,  // L_AnkleRoll_Joint
+        6,  // R_HipYaw_Joint
+        7,  // R_HipRoll_Joint
+        8,  // R_HipPitch_Joint
+        9,  // R_Knee_Joint
+        10, // R_AnklePitch_Joint
+        11, // R_AnkleRoll_Joint
+    };
+
+    int control_lowerbody_virtual_joint_idx[control_size_lowerbody_joint] = {0,};
+    for (int i = 0; i < control_size_lowerbody_joint; i++)
+    {
+        control_lowerbody_virtual_joint_idx[i] = control_lowerbody_joint_idx[i] + 6;
+    }
+
+    /* JACOBIAN */ 
+    MatrixXd J_temp_;
+    MatrixXd J_leg_, J_com_, J_cam_, J_init_;
+
+    // LEG, COM jacobian
+    J_leg_.setZero(control_size_leg, variable_size);
+    J_temp_.setZero(3, MODEL_DOF_VIRTUAL);
+
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Left_Foot].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(0, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Left_Foot].Jac().block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(3, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Right_Foot].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(6, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+    J_temp_ =  pelv_yaw_rot_current_from_global_.transpose() * rd_.link_[Right_Foot].Jac().block(3, 0, 3, MODEL_DOF_VIRTUAL);
+    J_leg_.block(9, 0, 3, MODEL_DOF_VIRTUAL) = J_temp_;
+
+    J_com_.setZero(control_size_com, variable_size);
+    J_com_ = pelv_yaw_rot_current_from_global_.transpose()   * rd_.link_[COM_id].Jac().block(0, 0, 3, MODEL_DOF_VIRTUAL);
+
+    // Initial pose return.
+    J_init_.setZero(control_size_upperbody_joint, variable_size);
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+        J_init_(i, control_upperbody_virtual_joint_idx[i]) = 1.0;
+
+    // Centroidal Momentum Matrix
+    J_cam_.setZero(control_size_cam, variable_size);
+    Eigen::MatrixXd cmm_; 
+    CalcVirtualCMM(cmm_);
+    Eigen::MatrixXd sel_matrix; sel_matrix.setZero(variable_size, variable_size);
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+        sel_matrix(control_upperbody_virtual_joint_idx[i], control_upperbody_virtual_joint_idx[i]) = 1.0;
+    J_cam_ = (pelv_yaw_rot_current_from_global_.transpose() * cmm_ * sel_matrix).block(0, 0, control_size_cam, MODEL_DOF_VIRTUAL);
+
+    KW_graph_jaco << "J_cam_: " << std::endl;
+    KW_graph_jaco << J_cam_ << std::endl;
+    KW_graph_jaco << std::endl;
+
+    Vector3d error_v_lfoot; error_v_lfoot.setZero();
+    Vector3d error_w_lfoot; error_w_lfoot.setZero();
+    Vector3d error_v_rfoot; error_v_rfoot.setZero();
+    Vector3d error_w_rfoot; error_w_rfoot.setZero();
+    Vector3d error_v_com;   error_v_com.setZero();
+
+    if(is_wbik_control_ == true){
+        // Control //
+        error_v_lfoot = lfoot_trajectory_float_slow_.translation() - lfoot_transform_pre_desired_from_.translation();
+        error_w_lfoot = -DyrosMath::getPhi(lfoot_transform_pre_desired_from_.linear(), lfoot_trajectory_float_slow_.linear());
+        error_v_rfoot = rfoot_trajectory_float_slow_.translation() - rfoot_transform_pre_desired_from_.translation();
+        error_w_rfoot = -DyrosMath::getPhi(rfoot_transform_pre_desired_from_.linear(), rfoot_trajectory_float_slow_.linear());
+
+        error_v_com = com_trajectory_float_slow_ - com_pos_current_;
+    }
+    else{
+        // Planning //    
+        error_v_lfoot = lfoot_trajectory_float_slow_.translation() - lfoot_transform_current_from_global_.translation();
+        error_w_lfoot = -DyrosMath::getPhi(lfoot_transform_current_from_global_.linear(), lfoot_trajectory_float_slow_.linear());
+        error_v_rfoot = rfoot_trajectory_float_slow_.translation() - rfoot_transform_current_from_global_.translation();
+        error_w_rfoot = -DyrosMath::getPhi(rfoot_transform_current_from_global_.linear(), rfoot_trajectory_float_slow_.linear());
+
+        error_v_com = com_trajectory_float_slow_ - com_transform_pre_desired_from_;
+    }
+
+    ///////////////////
+    /* COST FUNCTION */
+    J_hqp[0].setZero(control_size_leg,             variable_size); u_dot_hqp[0].setZero(control_size_leg);
+    J_hqp[1].setZero(control_size_com,             variable_size); u_dot_hqp[1].setZero(control_size_com);
+    J_hqp[2].setZero(control_size_cam,             variable_size); u_dot_hqp[2].setZero(control_size_cam);
+    J_hqp[3].setZero(control_size_upperbody_joint, variable_size); u_dot_hqp[3].setZero(control_size_upperbody_joint);
+
+    J_hqp[0] = J_leg_;    
+    u_dot_hqp[0].segment(0, 3) = lfoot_vel_trajectory_float_slow_.segment(0, 3) + kp_wbik[0] * error_v_lfoot;
+    u_dot_hqp[0].segment(3, 3) = lfoot_vel_trajectory_float_slow_.segment(3, 3) + kp_wbik[1] * error_w_lfoot;
+    u_dot_hqp[0].segment(6, 3) = rfoot_vel_trajectory_float_slow_.segment(0, 3) + kp_wbik[2] * error_v_rfoot;
+    u_dot_hqp[0].segment(9, 3) = rfoot_vel_trajectory_float_slow_.segment(3, 3) + kp_wbik[3] * error_w_rfoot;
+    
+    J_hqp[1] = J_com_;
+    u_dot_hqp[1](0) = com_dot_trajectory_float_fast_(0) + kp_wbik[4] * error_v_com(0);
+    u_dot_hqp[1](1) = com_dot_trajectory_float_fast_(1) + kp_wbik[5] * error_v_com(1);
+    u_dot_hqp[1](2) = com_dot_trajectory_float_fast_(2) + kp_wbik[6] * error_v_com(2);
+
+    J_hqp[2] = J_cam_;
+    u_dot_hqp[2] = del_ang_momentum_slow_.segment(0, control_size_cam);
+
+    J_hqp[3] = J_init_;
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+    {
+         u_dot_hqp[3](i) = 20.0 * (CAM_upper_init_q_(control_upperbody_joint_idx[i]) - motion_q_pre_(control_upperbody_joint_idx[i])); // qdot_init
+    }
+
+    H_hqp[0] = w_hqp_wbik1[0] * J_hqp[0].transpose() * J_hqp[0]
+             + w_hqp_wbik1[1] * J_hqp[1].transpose() * J_hqp[1]
+             + w_hqp_wbik1[2] * J_hqp[2].transpose() * J_hqp[2]
+             + w_hqp_wbik1[3] * Eigen::MatrixXd::Identity(variable_size, variable_size)
+             + w_hqp_wbik1[4] * Eigen::MatrixXd::Identity(variable_size, variable_size) / (dt_ * dt_);
+
+    g_hqp[0] =-w_hqp_wbik1[0] * J_hqp[0].transpose() * u_dot_hqp[0]
+              -w_hqp_wbik1[1] * J_hqp[1].transpose() * u_dot_hqp[1]
+              -w_hqp_wbik1[2] * J_hqp[2].transpose() * u_dot_hqp[2];
+    g_hqp[0].segment(6, MODEL_DOF) -= w_hqp_wbik1[4] * motion_q_dot_pre_.segment(0, MODEL_DOF) / (dt_ * dt_);
+
+    H_hqp[1] = w_hqp_wbik2[0] * J_hqp[3].transpose() * J_hqp[3]
+             + w_hqp_wbik2[1] * Eigen::MatrixXd::Identity(variable_size, variable_size)
+             + w_hqp_wbik2[2] * Eigen::MatrixXd::Identity(variable_size, variable_size) / (dt_ * dt_);
+
+    g_hqp[1] =-w_hqp_wbik2[0] * J_hqp[3].transpose() * u_dot_hqp[3];
+    g_hqp[1].segment(6, MODEL_DOF) -= w_hqp_wbik2[2] * motion_q_dot_pre_.segment(0, MODEL_DOF) / (dt_ * dt_);
+
+    for (int i = 0; i < hierarchy_num; i++)
+    {
+        if (i > last_solved_hierarchy_num_camhqp_)  // (***) TODO: WHY?
+        {
+            HQP_jacobian_ik[i].InitializeProblemSize(variable_size, constraint_size2[i]);
+        }
+    }
+
+    /* HQP */
+    Eigen::Vector2d eps;
+    last_solved_hierarchy_num_camhqp_ = -1;
+    for (int i = 0; i < hierarchy_num; i++)
+    {
+        /* CONSTRAINTS */
+        // lbA <= Ax <= ubA //
+        for(int k = 0; k < control_size_cam; k++){
+                eps(k) = DyrosMath::cubic(del_ang_momentum_slow_.segment(0, control_size_cam).norm(), 1, 3, eps_, 0.0, 0.0, 0.0); 
+        }
+
+        int equality_index = 0;
+        if(i == hierarchy_num - 1){ // 
+            A_hqp[i].setZero(constraint_size2[i], variable_size);
+
+            A_hqp[i].block(equality_index, 0,  control_size_leg, variable_size) = J_hqp[0];
+            ubA_hqp[i].segment(equality_index, control_size_leg)                = J_hqp[0] * q_dot_hqp[i-1];
+            lbA_hqp[i].segment(equality_index, control_size_leg)                = J_hqp[0] * q_dot_hqp[i-1];
+            equality_index += control_size_leg;
+            
+            A_hqp[i].block(equality_index, 0,  control_size_com, variable_size) = J_hqp[1];
+            ubA_hqp[i].segment(equality_index, control_size_com)                = J_hqp[1] * q_dot_hqp[i-1];
+            lbA_hqp[i].segment(equality_index, control_size_com)                = J_hqp[1] * q_dot_hqp[i-1];
+            equality_index += control_size_com;
+            
+            A_hqp[i].block(equality_index, 0,  control_size_cam, variable_size) = J_hqp[2];
+            ubA_hqp[i].segment(equality_index, control_size_cam)                = J_hqp[2] * q_dot_hqp[i-1] + eps;
+            lbA_hqp[i].segment(equality_index, control_size_cam)                = J_hqp[2] * q_dot_hqp[i-1] - eps;
+            equality_index += control_size_cam;
+        }
+
+        // lb <= x <= ub //
+        double speed_reduce_rate = 50; 
+        for (int virtual_joint_num = 0; virtual_joint_num < constraint_size1; virtual_joint_num++)
+        {
+            if (virtual_joint_num < 6)
+            {
+                lb_hqp[i](virtual_joint_num) = -100;
+                ub_hqp[i](virtual_joint_num) =  100;
+            }
+            else
+            {
+                int joint_num = virtual_joint_num - 6;
+
+                lb_hqp[i](virtual_joint_num) = min(max(speed_reduce_rate * (joint_limit_l_(joint_num) - motion_q_pre_(joint_num)),
+                                                joint_vel_limit_l_(joint_num)),
+                                                joint_vel_limit_h_(joint_num));
+                ub_hqp[i](virtual_joint_num) = max(min(speed_reduce_rate * (joint_limit_h_(joint_num) - motion_q_pre_(joint_num)),
+                                                joint_vel_limit_h_(joint_num)),
+                                                joint_vel_limit_l_(joint_num));
+            }
+        }
+
+        HQP_jacobian_ik[i].EnableEqualityCondition(equality_condition_eps_);
+        HQP_jacobian_ik[i].UpdateMinProblem(H_hqp[i],  g_hqp[i]);
+        HQP_jacobian_ik[i].DeleteSubjectToAx();
+        HQP_jacobian_ik[i].UpdateSubjectToAx(A_hqp[i], lbA_hqp[i], ubA_hqp[i]);
+        HQP_jacobian_ik[i].UpdateSubjectToX(lb_hqp[i], ub_hqp[i]);
+
+        if (HQP_jacobian_ik[i].SolveQPoases(200, q_dot_hqp_temp))
+        {   
+            q_dot_hqp[i] = q_dot_hqp_temp.segment(0, variable_size);
+
+            last_solved_hierarchy_num_camhqp_ = i;
+        }
+        else
+        {
+            q_dot_hqp[i].setZero(variable_size);
+            
+            std::cout << "Error hierarchy: " << i << std::endl;
+            std::cout << "last solved q_dot: " << q_dot_hqp[last_solved_hierarchy_num_camhqp_].transpose() << std::endl;
+             
+            break;
+        }
+    }
+
+    for (int i = 0; i < control_size_joint; i++)
+    {
+        motion_q_dot_(control_joint_idx[i]) = q_dot_hqp[last_solved_hierarchy_num_camhqp_](control_virtual_joint_idx[i]);
+        motion_q_(control_joint_idx[i]) = motion_q_pre_(control_joint_idx[i]) + motion_q_dot_(control_joint_idx[i]) * dt_;
+        pd_control_mask_(control_joint_idx[i]) = 1;
+    }
+
+    Eigen::VectorXd q_dot_upper, q_dot_lower, q_dot_virtual;
+    q_dot_upper.setZero(MODEL_DOF_VIRTUAL);
+    q_dot_lower.setZero(MODEL_DOF_VIRTUAL);
+    q_dot_virtual.setZero(MODEL_DOF_VIRTUAL);
+
+    for (int i = 0; i < control_size_upperbody_joint; i++)
+        q_dot_upper(control_upperbody_virtual_joint_idx[i]) = q_dot_hqp[last_solved_hierarchy_num_camhqp_](control_upperbody_virtual_joint_idx[i]);
+    for (int i = 0; i < control_size_lowerbody_joint; i++)
+        q_dot_lower(control_lowerbody_virtual_joint_idx[i]) = q_dot_hqp[last_solved_hierarchy_num_camhqp_](control_lowerbody_virtual_joint_idx[i]);
+    for (int i = 0; i < 6; i++)
+        q_dot_virtual(i) =  q_dot_hqp[last_solved_hierarchy_num_camhqp_](i);
+
+    KW_graph_wbik1 << u_dot_hqp[0].segment(0, control_size_leg).transpose() << " " << (J_leg_ * q_dot_hqp[last_solved_hierarchy_num_camhqp_]).transpose() << " " 
+                  << (J_leg_ * q_dot_upper).transpose() << " " << (J_leg_ * q_dot_lower).transpose() << " " << (J_leg_ * q_dot_virtual).transpose() << std::endl; 
+
+    KW_graph_wbik2 << u_dot_hqp[1].segment(0, control_size_com).transpose() << " " << (J_com_ * q_dot_hqp[last_solved_hierarchy_num_camhqp_]).transpose() << " " 
+                  << (J_com_ * q_dot_upper).transpose() << " " << (J_com_ * q_dot_lower).transpose() << " " << (J_com_ * q_dot_virtual).transpose() << std::endl; 
+
+    KW_graph_wbik3 << del_ang_momentum_slow_.segment(0, control_size_cam).transpose() << " " << (J_cam_ * q_dot_hqp[last_solved_hierarchy_num_camhqp_]).transpose() << " " 
+                  << (J_cam_ * q_dot_upper).transpose() << " " << (J_cam_ * q_dot_lower).transpose() << " " << (J_cam_ * q_dot_virtual).transpose() << std::endl; 
 }
 
 void AvatarController::getSelectedCMM_VirtualJoint(Eigen::MatrixXd &cmm_selected, int joint_idx[], const int joint_dim)
@@ -17301,8 +17736,7 @@ void AvatarController::getSelectedCMM_VirtualJoint(Eigen::MatrixXd &cmm_selected
     RigidBodyDynamics::CompositeRigidBodyAlgorithm(model_MJ_, q_test, M, true);
 
     getCentroidalMomentumMatrix_VirtualJoint(M, CMM);
-    // cmm_selected = CMM.block<2, MODEL_DOF_VIRTUAL>(0, 0) * sel_matrix;
-    cmm_selected = (pelv_support_current_.linear() * CMM).block(0, 0, 3, MODEL_DOF_VIRTUAL);
+    cmm_selected = CMM;
 }
 
 void AvatarController::getCentroidalMomentumMatrix_VirtualJoint(MatrixXd mass_matrix, MatrixXd &CMM)
@@ -17437,6 +17871,29 @@ Eigen::Vector3d AvatarController::lie_vee(const Eigen::Matrix3d &rot)
     return vee;
 }
 
+void AvatarController::CalcVirtualCMM(Eigen::MatrixXd &cmm)
+{
+    // Improved Computation of the Humanoid Centroidal Dynamics and Application for Whole-Body Control (https://www.worldscientific.com/doi/epdf/10.1142/S0219843615500395)
+    // https://github.com/saga0619/libdwbc/blob/a418dbe51bcf7db3e935cb58a3fcaac836b2235f/src/dwbc.cpp#L1410
+    Eigen::MatrixXd H_C = Eigen::MatrixXd::Zero(6, MODEL_DOF_VIRTUAL);
+
+    for (int i = 0; i < LINK_NUMBER; i++)
+    {
+        Eigen::Matrix3d r_ = rd_.link_[i].rotm;
+        Eigen::Matrix3d i_ = rd_.link_[i].inertia;
+        Eigen::Vector3d c_ = rd_.link_[i].com_position;
+        Eigen::Vector3d x_ = rd_.link_[i].xpos;
+
+        double m_          = rd_.link_[i].mass;
+
+        H_C.topRows(3) += (r_ * (i_ + DyrosMath::skew(c_) * DyrosMath::skew(c_).transpose() * m_) * r_.transpose() + DyrosMath::skew(x_) * r_ * DyrosMath::skew(c_).transpose() * m_ * r_.transpose()) * rd_.link_[i].Jac().bottomRows(3) + (r_ * DyrosMath::skew(c_) * m_ * r_.transpose() + m_ * DyrosMath::skew(x_)) * rd_.link_[i].Jac().topRows(3);
+
+        H_C.bottomRows(3) += m_ * r_ * DyrosMath::skew(c_).transpose() * r_.transpose() * rd_.link_[i].Jac().bottomRows(3) + m_ * rd_.link_[i].Jac().topRows(3);
+    }
+
+    cmm = H_C.topRows(3) - DyrosMath::skew(rd_.link_[COM_id].xpos) * H_C.bottomRows(3);
+}
+
 void AvatarController::getParameterYAML()
 {
     std::cout << "Get Parameter from YAML File" << std::endl;
@@ -17445,11 +17902,21 @@ void AvatarController::getParameterYAML()
     // in the "tocabi_controller/launch/simulation.launch" or "tocabi_controller/launch/realrobot.launch" 
     std::cout << std::endl;
 
-    // WBIK
+    // QP WBIK
     ros::param::get("/tocabi_controller/w_wbik", w_wbik);
     for (int i = 0; i < 6; i++) { std::cout << "w_wbik" << i << ": " << w_wbik[i] << std::endl;}
 
     ros::param::get("/tocabi_controller/kp_wbik", kp_wbik);
     for (int i = 0; i < 7; i++) { std::cout << "kp_wbik" << i << ": " << kp_wbik[i] << std::endl;}
+
+    // HQP WBIK
+    ros::param::get("/tocabi_controller/w_hqp_wbik1", w_hqp_wbik1);
+    for (int i = 0; i < 5; i++) { std::cout << "w_hqp_wbik1-" << i << ": " << w_hqp_wbik1[i] << std::endl;}
+    
+    ros::param::get("/tocabi_controller/w_hqp_wbik2", w_hqp_wbik2);
+    for (int i = 0; i < 3; i++) { std::cout << "w_hqp_wbik2-" << i << ": " << w_hqp_wbik2[i] << std::endl;}
+
+    ros::param::get("/tocabi_controller/eps_", eps_);
+    std::cout << "eps_: " << eps_ << std::endl;
 
 }
