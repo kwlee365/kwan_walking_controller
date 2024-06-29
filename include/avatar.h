@@ -1769,8 +1769,8 @@ public:
 
     Eigen::MatrixXd H_hqp[2], A_hqp[2];
     Eigen::VectorXd g_hqp[2], ubA_hqp[2], lbA_hqp[2], ub_hqp[2], lb_hqp[2];
-    Eigen::MatrixXd J_hqp[4];
-    Eigen::VectorXd u_dot_hqp[4];
+    Eigen::MatrixXd J_hqp[5];
+    Eigen::VectorXd u_dot_hqp[5];
 
     Eigen::VectorXd q_dot_hqp[2];
     Eigen::VectorXd q_dot_hqp_temp;

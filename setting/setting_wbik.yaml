@@ -8,8 +8,9 @@ w_wbik : [100.0,       # Foot
 
 w_hqp_wbik1 : [100.0,     # Foot
                1.0,       # COM
-               0.01,      # CAM
-               0.0001,    # Joint vel
+               0.01,      # CAM (control Joint)
+               1.0,      # CAM (residual joint)
+               0.00001,    # Joint vel
                0.0000001]  # Joint acc
 
 w_hqp_wbik2 : [1.0,       # Initial pose return
